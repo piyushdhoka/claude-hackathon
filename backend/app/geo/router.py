@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from . import corridor, service
+from . import corridor, route, service
 
 router = APIRouter(prefix="/geo", tags=["geo"])
 
@@ -28,6 +28,15 @@ def kiosks():
 def corridor_search(location: str, radius_m: float = 1500.0, top_k: int = 15):
     """CCTV cameras to review near a last-seen location, ranked + drift-biased."""
     res = corridor.search_corridor(location, radius_m=radius_m, top_k=top_k)
+    if res is None:
+        raise HTTPException(404, "location not found")
+    return res
+
+
+@router.get("/handoff")
+def handoff(location: str, k: int = 3):
+    """Nearest police station / help center to route a reunited family to."""
+    res = route.handoff_route(location, k=k)
     if res is None:
         raise HTTPException(404, "location not found")
     return res
