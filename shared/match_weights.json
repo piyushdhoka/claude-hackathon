@@ -1,0 +1,32 @@
+{
+  "_comment": "Single source of truth for match scoring. Consumed by backend/app/match (Python) AND frontend JS matcher (lib/match-lite). Keep both in sync via this file. Scores fuse to 0-100 with available-case normalization (absent features dropped from numerator AND denominator).",
+  "weights": {
+    "name_fuzzy": 0.22,
+    "name_phonetic": 0.08,
+    "gender": 0.12,
+    "age_band": 0.14,
+    "geo": 0.18,
+    "time": 0.08,
+    "language": 0.06,
+    "state_district": 0.06,
+    "description": 0.06
+  },
+  "sub_scores": {
+    "gender": { "same": 1.0, "either_unknown": 0.5, "mismatch": 0.0 },
+    "age_band": { "same": 1.0, "adjacent": 0.6, "else": 0.0 },
+    "geo": { "decay_km": 2.0, "_formula": "exp(-dist_km / decay_km)" },
+    "time": { "decay_hours": 48, "_formula": "exp(-abs(delta_hours) / decay_hours)" },
+    "state_district": { "same_state": 0.6, "same_district": 0.4 }
+  },
+  "hard_rules": {
+    "mobile_exact_floor": 92,
+    "gender_age_mismatch_cap": 25,
+    "gender_age_mismatch_bands_apart": 2
+  },
+  "thresholds": {
+    "auto_flag": 75,
+    "review_low": 45,
+    "_comment": "score >= auto_flag -> surface to operator; review_low..auto_flag -> human-review queue (Claude tie-break online); < review_low -> discard. Re-calibrate with eval."
+  },
+  "age_band_order": ["0-12", "13-17", "18-40", "41-60", "61-70", "71-80", "80+"]
+}

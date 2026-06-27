@@ -1,0 +1,66 @@
+{
+  "_comment": "Tap-vocabulary for the phoneless, non-literate intake wizard. Every option = icon + color/photo + label in the selected language + audio. Values are grounded in the actual dataset (descriptions, languages, last_seen_location). Consumed by the frontend intake wizard.",
+  "languages": [
+    { "code": "hi", "label": "Hindi", "native": "हिन्दी" },
+    { "code": "mr", "label": "Marathi", "native": "मराठी" },
+    { "code": "bn", "label": "Bengali", "native": "বাংলা" },
+    { "code": "ta", "label": "Tamil", "native": "தமிழ்" },
+    { "code": "te", "label": "Telugu", "native": "తెలుగు" },
+    { "code": "kn", "label": "Kannada", "native": "ಕನ್ನಡ" },
+    { "code": "gu", "label": "Gujarati", "native": "ગુજરાતી" },
+    { "code": "mai", "label": "Maithili", "native": "मैथिली" },
+    { "code": "bho", "label": "Bhojpuri", "native": "भोजपुरी" },
+    { "code": "awa", "label": "Awadhi", "native": "अवधी" }
+  ],
+  "who_is_lost": [
+    { "key": "elder_man", "label": "Elder man", "gender": "Male", "age_hint": "61-70", "icon": "elder-man" },
+    { "key": "elder_woman", "label": "Elder woman", "gender": "Female", "age_hint": "61-70", "icon": "elder-woman" },
+    { "key": "adult_man", "label": "Man", "gender": "Male", "age_hint": "18-40", "icon": "man" },
+    { "key": "adult_woman", "label": "Woman", "gender": "Female", "age_hint": "18-40", "icon": "woman" },
+    { "key": "boy", "label": "Boy", "gender": "Male", "age_hint": "0-12", "icon": "boy" },
+    { "key": "girl", "label": "Girl", "gender": "Female", "age_hint": "0-12", "icon": "girl" },
+    { "key": "unsure", "label": "Not sure", "gender": "Unknown", "age_hint": "Unknown", "icon": "question" }
+  ],
+  "age_bands": ["0-12", "13-17", "18-40", "41-60", "61-70", "71-80", "80+"],
+  "clothing_colors": [
+    { "key": "saffron", "label": "Saffron", "hex": "#F4820B" },
+    { "key": "white", "label": "White", "hex": "#F8F8F8" },
+    { "key": "yellow", "label": "Yellow", "hex": "#F2C200" },
+    { "key": "red", "label": "Red", "hex": "#D32F2F" },
+    { "key": "green", "label": "Green", "hex": "#388E3C" },
+    { "key": "blue", "label": "Blue", "hex": "#1976D2" },
+    { "key": "pink", "label": "Pink", "hex": "#E91E8C" },
+    { "key": "grey", "label": "Grey", "hex": "#9E9E9E" },
+    { "key": "black", "label": "Black", "hex": "#2B2B2B" },
+    { "key": "orange", "label": "Orange", "hex": "#FB8C00" }
+  ],
+  "clothing_types": [
+    "kurta", "saree", "silk saree", "dhoti", "dhoti kurta", "shirt",
+    "full pants shirt", "school dress", "school uniform", "vest", "frock", "burqa"
+  ],
+  "marks": [
+    "rudraksha mala", "tilak", "bindi", "spectacles", "walking stick",
+    "hearing aid", "turban", "bag", "widow marks", "bald", "grey hair", "pigtails"
+  ],
+  "mobility_confusion_flags": [
+    { "key": "memory_loss", "label": "Cannot remember / lost memory" },
+    { "key": "asks_for_landmark", "label": "Keeps asking for a place (e.g. Ramkund)" },
+    { "key": "hard_of_hearing", "label": "Hard of hearing" },
+    { "key": "cannot_speak", "label": "Cannot speak properly" },
+    { "key": "crying", "label": "Crying / distressed" },
+    { "key": "has_child", "label": "Has a small child with them" }
+  ],
+  "last_seen_locations": [
+    "Madsangvi Transit", "Sadhugram Gate 2", "Ramkund Ghat", "Nashik Road Station",
+    "Trimbak Road", "Gauri Patangan", "Dasak Ghat", "Adgaon Parking", "Nandur Ghat",
+    "Laxmi Narayan Ghat", "Takli Sangam", "Bus Stand Nashik", "Kushavart Kund",
+    "Sadhugram Gate 1", "Main Police Chowki", "Kapila Sangam", "Dindori Road Crossing",
+    "Panchavati Circle", "Trimbakeshwar Approach", "Rajur Bahula"
+  ],
+  "centers": [
+    "Trimbakeshwar Kho-Ya-Paya Kendra", "Adgaon Kho-Ya-Paya", "Bharat Bharati Control Room",
+    "Ramkund Kho-Ya-Paya Kendra", "Nashik Road Center", "Central Control Room",
+    "Panchavati Center", "Sadhugram Lost Found", "Rajur Bahula Center", "Police Main Control Room"
+  ],
+  "genders": ["Male", "Female", "Unknown"]
+}
