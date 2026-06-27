@@ -6,27 +6,32 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, ArrowRight, MapPin, User, Sparkles, AlertTriangle } from "lucide-react";
 import { useApp } from "@/store/app";
-import { api } from "@/lib/api";
 import type { Case, MatchCandidate } from "@/lib/types";
+import { loadCases, runMatch as runMatchData } from "@/lib/data";
 import { CaseFilters, CaseList } from "@/components/review/CaseList";
 import { MatchCard } from "@/components/review/MatchCard";
 
 export default function ReviewPage() {
-  const { role, language } = useApp();
+  const { role, language, online } = useApp();
   const [cases, setCases] = useState<Case[] | null>(null);
   const [loadErr, setLoadErr] = useState(false);
+  const [offlineData, setOfflineData] = useState(false);
   const [filter, setFilter] = useState({ case_type: "", q: "" });
 
   const [selected, setSelected] = useState<Case | null>(null);
   const [matches, setMatches] = useState<MatchCandidate[] | null>(null);
   const [matching, setMatching] = useState(false);
 
-  // load the registry (best-effort; backend may be down)
+  // load the registry — offline-aware (mirror + match-lite when the network dies)
   useEffect(() => {
     let cancelled = false;
-    api
-      .listCases({ limit: 100 }, role)
-      .then((cs) => !cancelled && setCases(cs))
+    loadCases({ limit: 1000 }, role, online)
+      .then(({ cases: cs, source }) => {
+        if (cancelled) return;
+        setCases(cs);
+        setOfflineData(source === "mirror");
+        setLoadErr(source === "mirror" && cs.length === 0);
+      })
       .catch(() => {
         if (!cancelled) {
           setCases([]);
@@ -36,23 +41,26 @@ export default function ReviewPage() {
     return () => {
       cancelled = true;
     };
-  }, [role]);
+  }, [role, online]);
 
-  const runMatch = useCallback(async (c: Case) => {
-    setSelected(c);
-    setMatches(null);
-    setMatching(true);
-    // missing case -> search found registry, and vice-versa
-    const target = c.case_type === "missing" ? "found" : "missing";
-    try {
-      const res = await api.match(c, target, 5);
-      setMatches(res);
-    } catch {
-      setMatches([]);
-    } finally {
-      setMatching(false);
-    }
-  }, []);
+  const runMatch = useCallback(
+    async (c: Case) => {
+      setSelected(c);
+      setMatches(null);
+      setMatching(true);
+      // missing case -> search found registry, and vice-versa
+      const target = c.case_type === "missing" ? "found" : "missing";
+      try {
+        const { matches: res } = await runMatchData(c, target, online, 5);
+        setMatches(res);
+      } catch {
+        setMatches([]);
+      } finally {
+        setMatching(false);
+      }
+    },
+    [online]
+  );
 
   return (
     <div className="space-y-6">
@@ -63,10 +71,17 @@ export default function ReviewPage() {
         </p>
       </header>
 
+      {offlineData && !loadErr && (
+        <p className="flex items-center gap-2 rounded-xl bg-indigo/10 p-3 text-sm text-indigo">
+          <AlertTriangle size={16} /> Offline — searching the locally cached registry with the
+          on-device matcher. Results sync when the network returns.
+        </p>
+      )}
+
       {loadErr && (
         <p className="flex items-center gap-2 rounded-xl bg-saffron/10 p-3 text-sm text-saffron-dark">
-          <AlertTriangle size={16} /> Could not reach the registry — showing nothing. Check the
-          backend at 127.0.0.1:8000.
+          <AlertTriangle size={16} /> No cached cases yet. Connect once (backend at 127.0.0.1:8000)
+          to warm the offline copy.
         </p>
       )}
 

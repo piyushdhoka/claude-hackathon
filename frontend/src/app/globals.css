@@ -1,49 +1,251 @@
 @import "tailwindcss";
 
-/* Setu design system — saffron (Kumbh) + trustworthy indigo, large tap targets
-   for non-literate, phoneless intake. High contrast, generous spacing. */
+/* ════════════════════════════════════════════════════════════════════════
+   SETU — "Ghat Light" design system
+   ────────────────────────────────────────────────────────────────────────
+   Devotional minimalism for a field tool used at crowded river ghats.
+   Warm sandstone ground, saffron sun (action), deep indigo river (system/
+   trust), brass-teal (found/success), kumkum rose (alert/missing).
+   Designed mobile-first (390px), sunlight-readable (high contrast), and
+   reachable one-handed. The signature motif is the "river thread" — a
+   saffron→indigo flowing line that recurs in the header, the wizard mala
+   rail, and section accents (Setu = "bridge").
+   ════════════════════════════════════════════════════════════════════════ */
 :root {
-  --background: #fbf7f0;     /* warm sand */
-  --foreground: #1c1917;
-  --card: #ffffff;
-  --saffron: #ea7317;        /* primary action */
-  --saffron-dark: #c25d0c;
-  --indigo: #3730a3;         /* trust / system */
-  --indigo-light: #6366f1;
-  --teal: #0f766e;           /* found / success */
-  --rose: #be123c;           /* alert / missing */
-  --muted: #78716c;
-  --border: #e7e0d4;
+  /* Ground & ink */
+  --background: #f7f1e6;     /* warm sandstone */
+  --surface: #fffdf8;        /* card / paper */
+  --surface-2: #f1e9da;      /* sunk panel */
+  --foreground: #20160f;     /* near-black with a warm bias */
+  --card: #fffdf8;
+
+  /* Brand */
+  --saffron: #e26a12;        /* primary action — sun on the water */
+  --saffron-dark: #b14e07;
+  --saffron-soft: #fbe6d2;
+  --indigo: #2b2a72;         /* system / trust — the river at depth */
+  --indigo-light: #5b58c4;
+  --indigo-soft: #e6e5f5;
+  --teal: #0c6b62;           /* found / success — brass patina */
+  --teal-soft: #d4ece8;
+  --rose: #ad1d44;           /* alert / missing — kumkum */
+  --rose-soft: #f7dbe2;
+
+  --muted: #7a6a58;          /* warm grey ink */
+  --border: #e3d7c2;         /* sandstone hairline */
+  --ring: #e26a12;
+
+  /* Type */
+  --font-display: var(--font-fraunces);
+  --font-sans: var(--font-hanken);
+  --font-mono: var(--font-geist-mono);
+
+  /* Elevation — warm, low, layered (no flat black shadows) */
+  --shadow-sm: 0 1px 2px rgba(60, 36, 14, 0.06), 0 1px 1px rgba(60, 36, 14, 0.04);
+  --shadow-md: 0 6px 16px -6px rgba(60, 36, 14, 0.18), 0 2px 6px -2px rgba(60, 36, 14, 0.10);
+  --shadow-lg: 0 18px 40px -18px rgba(43, 28, 12, 0.32), 0 6px 14px -8px rgba(43, 28, 12, 0.18);
+
+  /* Safe-area helpers (PWA, notches) */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* Height of the mobile bottom tab bar, including safe area */
+  --tabbar-h: calc(4.5rem + var(--safe-bottom));
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
+
   --color-saffron: var(--saffron);
   --color-saffron-dark: var(--saffron-dark);
+  --color-saffron-soft: var(--saffron-soft);
   --color-indigo: var(--indigo);
   --color-indigo-light: var(--indigo-light);
+  --color-indigo-soft: var(--indigo-soft);
   --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
   --color-rose: var(--rose);
+  --color-rose-soft: var(--rose-soft);
+
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────── */
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Layered "river haze" ground: two soft radial glows over warm sand,
+     plus a faint woven grain so large areas never read as flat. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(120% 90% at 100% -10%, rgba(226, 106, 18, 0.10), transparent 55%),
+    radial-gradient(120% 90% at -10% 110%, rgba(43, 42, 114, 0.10), transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  background-attachment: fixed, fixed, fixed;
+  min-height: 100dvh;
 }
 
-/* Big, finger-friendly tap target used across the wizard */
+/* Distinctive display type for headings */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* ── The "river thread" — signature flowing accent ────────────────────── */
+.river-thread {
+  background: linear-gradient(
+    90deg,
+    var(--saffron) 0%,
+    #d8632c 28%,
+    var(--rose) 50%,
+    var(--indigo-light) 74%,
+    var(--indigo) 100%
+  );
+}
+.river-rule {
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--saffron), var(--rose) 45%, var(--indigo));
+  opacity: 0.9;
+}
+
+/* ── Tap primitives (legacy classes kept; refined) ────────────────────── */
 .tap {
-  @apply rounded-2xl border-2 border-border bg-card p-5 text-lg font-semibold
-         shadow-sm transition active:scale-[0.97];
+  border-radius: var(--radius-2xl);
+  border: 2px solid var(--border);
+  background: var(--card);
+  padding: 1.25rem;
+  font-size: 1.125rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   min-height: 5.5rem;
 }
+.tap:active { transform: scale(0.97); }
 .tap-selected {
-  @apply border-saffron ring-4 ring-saffron/20;
+  border-color: var(--saffron);
+  box-shadow: 0 0 0 4px rgba(226, 106, 18, 0.18);
+}
+
+/* Card surface helper */
+.surface-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────── */
+@keyframes setu-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes setu-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes setu-pop {
+  0% { opacity: 0; transform: scale(0.92); }
+  60% { transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes setu-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes setu-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+.animate-rise { animation: setu-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade { animation: setu-fade 0.4s ease both; }
+.animate-pop { animation: setu-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+/* staggered children */
+.stagger > * { animation: setu-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.04s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.16s; }
+.stagger > *:nth-child(4) { animation-delay: 0.22s; }
+.stagger > *:nth-child(5) { animation-delay: 0.28s; }
+.stagger > *:nth-child(6) { animation-delay: 0.34s; }
+
+.flow-thread {
+  background-size: 200% 100%;
+  animation: setu-flow 6s linear infinite;
+}
+
+/* Skeleton shimmer */
+.skeleton {
+  background: linear-gradient(100deg, var(--surface-2) 30%, rgba(255,255,255,0.6) 50%, var(--surface-2) 70%);
+  background-size: 200% 100%;
+  animation: setu-shimmer 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Layout helpers ───────────────────────────────────────────────────── */
+.page-pad {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+}
+/* Reserve space for the mobile bottom tab bar so content never hides under it */
+.has-tabbar {
+  padding-bottom: calc(var(--tabbar-h) + 1rem);
+}
+@media (min-width: 768px) {
+  .has-tabbar { padding-bottom: 2rem; }
+}
+
+/* Hide scrollbar on horizontal rails while keeping scroll */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Focus visibility — accessible without being ugly */
+:focus-visible {
+  outline: 3px solid rgba(226, 106, 18, 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Leaflet popups in our voice */
+.leaflet-container { font-family: var(--font-sans), system-ui, sans-serif; }
+.leaflet-popup-content-wrapper {
+  border-radius: 14px;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Print: the case token slip ──────────────────────────────────────── */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .case-token {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
 }

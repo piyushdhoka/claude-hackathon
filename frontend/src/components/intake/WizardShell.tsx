@@ -1,12 +1,14 @@
 "use client";
-// Structural scaffold for the tap-only intake wizard. Provides:
-//   - a "mala" progress rail (rudraksha-bead dots) the operator can tap to jump
-//   - a big step header with the localized prompt + a read-aloud button
-//   - a sticky footer with Back / Next (or a custom primary action)
-// All chrome here is operator-facing; the pilgrim only watches the big content.
+// Structural scaffold for the tap-only intake wizard.
+//   - MalaRail  : a flowing "river thread" progress track with rudraksha-bead
+//                 dots the operator can tap to jump back; shows step N of M.
+//   - StepHeader: a big localized prompt with a read-aloud button.
+//   - WizardFooter: a sticky one-handed action bar that floats ABOVE the mobile
+//                 bottom tab bar and respects the safe-area inset.
+// All chrome is operator-facing; the pilgrim only watches the big content.
 import type { ReactNode } from "react";
 import { clsx } from "clsx";
-import { ArrowLeft, ArrowRight, Volume2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Volume2, Check } from "lucide-react";
 
 export function MalaRail({
   steps,
@@ -19,41 +21,60 @@ export function MalaRail({
   reachable: number; // furthest step the operator may jump to
   onJump: (i: number) => void;
 }) {
+  const total = steps.length;
+  const pct = Math.round(((current + 1) / total) * 100);
+
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-      {steps.map((s, i) => {
-        const done = i < current;
-        const active = i === current;
-        const canJump = i <= reachable;
-        return (
-          <button
-            key={s.key}
-            type="button"
-            disabled={!canJump}
-            onClick={() => canJump && onJump(i)}
-            title={s.label}
-            className="group flex shrink-0 items-center gap-1.5"
-          >
-            <span
-              className={clsx(
-                "grid h-7 w-7 place-items-center rounded-full text-xs font-bold transition",
-                active
-                  ? "scale-110 bg-saffron text-white shadow ring-4 ring-saffron/20"
-                  : done
-                    ? "bg-saffron/80 text-white"
-                    : canJump
-                      ? "bg-card text-muted ring-1 ring-border"
-                      : "bg-background text-muted/50 ring-1 ring-border"
-              )}
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wide text-muted">
+        <span>
+          Step {current + 1} of {total}
+        </span>
+        <span>{pct}%</span>
+      </div>
+
+      {/* flowing track with progress fill */}
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-surface-2">
+        <div
+          className="river-thread flow-thread absolute inset-y-0 left-0 rounded-full transition-[width] duration-500 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* bead row — scrollable, tappable to jump back */}
+      <div className="no-scrollbar -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-0.5">
+        {steps.map((s, i) => {
+          const done = i < current;
+          const active = i === current;
+          const canJump = i <= reachable;
+          return (
+            <button
+              key={s.key}
+              type="button"
+              disabled={!canJump}
+              onClick={() => canJump && onJump(i)}
+              title={s.label}
+              aria-label={`Step ${i + 1}: ${s.label}`}
+              className="shrink-0"
             >
-              {i + 1}
-            </span>
-            {i < steps.length - 1 && (
-              <span className={clsx("h-0.5 w-3 rounded", done ? "bg-saffron/60" : "bg-border")} />
-            )}
-          </button>
-        );
-      })}
+              <span
+                className={clsx(
+                  "grid place-items-center rounded-full text-[11px] font-bold transition",
+                  active
+                    ? "h-7 w-7 scale-105 bg-saffron text-white shadow ring-4 ring-saffron/20"
+                    : done
+                      ? "h-6 w-6 bg-saffron/85 text-white"
+                      : canJump
+                        ? "h-6 w-6 bg-surface text-muted ring-1 ring-border"
+                        : "h-5 w-5 bg-surface-2 text-muted/40 ring-1 ring-border"
+                )}
+              >
+                {done ? <Check size={13} strokeWidth={3} /> : i + 1}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -74,15 +95,20 @@ export function StepHeader({
   return (
     <div className="flex items-start gap-3">
       <div className="flex-1">
-        <h2 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">{title}</h2>
+        <h2 className="font-display text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
+          {title}
+        </h2>
         {hint && <p className="mt-1 text-base text-muted">{hint}</p>}
       </div>
       {canSpeak && onSpeak && (
         <button
           type="button"
           onClick={onSpeak}
-          className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-indigo/10 text-indigo transition active:scale-95"
-          aria-label="Read aloud"
+          className={clsx(
+            "grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-95",
+            speaking ? "bg-indigo text-white shadow" : "bg-indigo/10 text-indigo"
+          )}
+          aria-label="Read this question aloud"
         >
           <Volume2 size={22} className={speaking ? "animate-pulse" : ""} />
         </button>
@@ -111,37 +137,42 @@ export function WizardFooter({
   primary?: ReactNode; // override the right-hand action entirely
 }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-2 flex items-center gap-3 border-t border-border bg-background/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-      <button
-        type="button"
-        onClick={onBack}
-        disabled={backDisabled}
-        className="inline-flex items-center gap-2 rounded-2xl border-2 border-border bg-card px-5 py-3 font-bold text-foreground/80 transition active:scale-95 disabled:opacity-40"
-      >
-        <ArrowLeft size={18} /> Back
-      </button>
-
-      {optional && onSkip && (
+    <div
+      className="sticky z-30 -mx-4 mt-2 border-t border-border bg-surface/92 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:border sm:px-5"
+      style={{ bottom: "calc(var(--tabbar-h))" }}
+    >
+      <div className="mx-auto flex max-w-3xl items-center gap-3">
         <button
           type="button"
-          onClick={onSkip}
-          className="rounded-2xl px-3 py-3 font-semibold text-muted underline-offset-2 hover:underline"
+          onClick={onBack}
+          disabled={backDisabled}
+          className="inline-flex h-12 items-center gap-2 rounded-2xl border border-border bg-surface px-4 font-bold text-foreground/80 transition active:scale-95 disabled:opacity-40"
         >
-          Skip
+          <ArrowLeft size={18} /> <span className="hidden sm:inline">Back</span>
         </button>
-      )}
 
-      <div className="ml-auto">
-        {primary ?? (
+        {optional && onSkip && (
           <button
             type="button"
-            onClick={onNext}
-            disabled={nextDisabled}
-            className="inline-flex items-center gap-2 rounded-2xl bg-saffron px-7 py-3 text-lg font-bold text-white shadow transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={onSkip}
+            className="h-12 rounded-2xl px-3 font-semibold text-muted underline-offset-2 hover:underline"
           >
-            {nextLabel} <ArrowRight size={20} />
+            Skip
           </button>
         )}
+
+        <div className="ml-auto">
+          {primary ?? (
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={nextDisabled}
+              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-saffron px-7 text-lg font-bold text-white shadow-md transition active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {nextLabel} <ArrowRight size={20} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

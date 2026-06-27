@@ -1,11 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Nav } from "@/components/Nav";
+import { TopBar, BottomTabs } from "@/components/Nav";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Distinctive type: a warm humanist display serif (Fraunces) paired with a
+// clean, highly legible grotesque body (Hanken Grotesk). Mono for case IDs.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  axes: ["opsz"],
+});
+
+const hanken = Hanken_Grotesk({
+  variable: "--font-hanken",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -18,12 +28,15 @@ export const metadata: Metadata = {
   description:
     "Offline-capable, cross-center missing-persons reunification for Kumbh Mela 2027.",
   manifest: "/manifest.webmanifest",
+  applicationName: "Setu",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Setu" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#ea7317",
+  themeColor: "#e26a12",
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -34,11 +47,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${hanken.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <Nav />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <body className="flex min-h-[100dvh] flex-col">
+        <TopBar />
+        <main className="page-pad has-tabbar mx-auto w-full max-w-6xl flex-1 py-5 sm:py-7">
+          {children}
+        </main>
+        <BottomTabs />
       </body>
     </html>
   );

@@ -25,6 +25,7 @@ import {
 import { useApp } from "@/store/app";
 import { api } from "@/lib/api";
 import { createCase } from "@/lib/cases";
+import { runMatch as runMatchData } from "@/lib/data";
 import type { Case, MatchCandidate } from "@/lib/types";
 
 import { vocab, colorByKey } from "@/components/common/vocab";
@@ -39,6 +40,7 @@ import { PhotoVisionStep, type VisionResult } from "./PhotoVisionStep";
 import { VoiceNoteStep, type VoiceNote } from "./VoiceNoteStep";
 import { buildDescription, type DraftCase } from "./summary";
 import { MatchCard } from "@/components/review/MatchCard";
+import { CaseToken } from "@/components/token/CaseToken";
 
 type StepKey =
   | "mode"
@@ -214,11 +216,12 @@ export function IntakeWizard() {
     try {
       const res = await createCase(doc, "operator");
       setCreated({ case_id: res.case_id, queued: res.queued });
-      // After a FOUND submit, immediately search the missing registry.
+      // After a FOUND submit, immediately search the missing registry — offline-aware
+      // (server engine when online, on-device matcher over the mirror when offline).
       if ((mode ?? "found") === "found") {
         setMatchLoading(true);
         try {
-          const cands = await api.match(doc, "missing", 5);
+          const { matches: cands } = await runMatchData(doc, "missing", online, 5);
           setMatches(cands);
         } catch {
           setMatches([]);
@@ -233,7 +236,7 @@ export function IntakeWizard() {
     } finally {
       setSubmitting(false);
     }
-  }, [buildCaseDoc, mode]);
+  }, [buildCaseDoc, mode, online]);
 
   // ---- success screen (after confirm) ----
   if (created) {
@@ -270,7 +273,7 @@ export function IntakeWizard() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* progress mala */}
       <MalaRail
         steps={STEP_ORDER.map((s) => ({ key: s.key, label: tr(`title_${s.key}`) }))}
@@ -279,15 +282,17 @@ export function IntakeWizard() {
         onJump={goto}
       />
 
-      <StepHeader
-        title={tr(`title_${step.key}`)}
-        onSpeak={() => speech.speak(tr(`title_${step.key}`))}
-        canSpeak={speech.supported}
-        speaking={speech.speaking}
-      />
+      {/* step card */}
+      <div className="rounded-3xl border border-border bg-surface p-5 shadow-sm sm:p-6">
+        <StepHeader
+          title={tr(`title_${step.key}`)}
+          onSpeak={() => speech.speak(tr(`title_${step.key}`))}
+          canSpeak={speech.supported}
+          speaking={speech.speaking}
+        />
 
-      {/* ---- STEP CONTENT ---- */}
-      <div className="min-h-[18rem]">
+        {/* ---- STEP CONTENT ---- */}
+        <div key={step.key} className="mt-5 min-h-72 animate-fade">
         {step.key === "mode" && (
           <TapGrid cols={2}>
             <TapCard
@@ -496,6 +501,7 @@ export function IntakeWizard() {
             visionImg={vision?.image_b64 ?? null}
           />
         )}
+        </div>
       </div>
 
       {/* ---- FOOTER ---- */}
@@ -507,7 +513,7 @@ export function IntakeWizard() {
               type="button"
               onClick={submit}
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-2xl bg-teal px-8 py-3 text-lg font-bold text-white shadow transition active:scale-95 disabled:opacity-60"
+              className="inline-flex h-12 items-center gap-2 rounded-2xl bg-teal px-7 text-lg font-bold text-white shadow-md transition active:scale-95 disabled:opacity-60"
             >
               {submitting ? <Loader2 size={20} className="animate-spin" /> : <CheckCircle2 size={20} />}
               Confirm &amp; save
@@ -556,7 +562,7 @@ function ReviewStep({
           <img
             src={visionImg}
             alt="Captured"
-            className="aspect-[3/4] w-32 shrink-0 rounded-2xl border border-border object-cover"
+            className="aspect-3/4 w-32 shrink-0 rounded-2xl border border-border object-cover"
           />
         )}
         <div className="flex-1 space-y-3">
