@@ -79,3 +79,65 @@ export interface SetuEvent {
 }
 
 export type Role = "operator" | "supervisor";
+
+// ── Feature-extension types (mirror the new backend routers) ──────────────
+
+// F3 — triage queue item: a Case annotated by app/triage/service.py
+export interface TriageItem extends Case {
+  vulnerability: number; // 0..1
+  eta_hours: number | null;
+  sla_breach: boolean;
+}
+
+// F2 — CCTV search corridor (app/geo/corridor.py)
+export interface CorridorCamera {
+  camera_id: string;
+  lat: number;
+  lng: number;
+  distance_m: number;
+  on_corridor: boolean;
+  score: number;
+}
+export interface CorridorResult {
+  origin: { lat: number; lng: number; zone_id: string | null; last_seen_location: string };
+  drift_target: { name: string; lat: number; lng: number; category: string } | null;
+  cameras: CorridorCamera[];
+}
+
+// F5 — reunion handoff routing (app/geo/route.py)
+export interface HandoffPoint {
+  name: string;
+  kind: string; // "police" | "center"
+  lat: number;
+  lng: number;
+  distance_m: number;
+  bearing_deg: number;
+  heading: string; // N / NE / E ...
+}
+export interface HandoffResult {
+  origin: { lat: number; lng: number; zone_id: string | null; location: string };
+  destination: HandoffPoint;
+  options: HandoffPoint[];
+}
+
+// F1 — SMS/IVR notify-on-match (app/notify/service.py)
+export interface NotifyResult {
+  sent: boolean;
+  reason?: string;
+  channel?: string;
+  masked_to: string | null;
+  language?: string;
+  message?: string;
+}
+
+// F6 — claim-fraud guard (app/claim/service.py)
+export interface ClaimVerdict {
+  claim_id?: string | null;
+  case_id?: string | null;
+  risk: number;
+  band: "clear" | "review" | "block";
+  flags: string[];
+  requires_guardian_consent: boolean;
+  requires_supervisor: boolean;
+  allow_auto_reveal: boolean;
+}

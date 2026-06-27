@@ -12,6 +12,9 @@ import {
   Network,
   CloudOff,
   Languages,
+  Users,
+  ListChecks,
+  Camera,
 } from "lucide-react";
 import { useApp } from "@/store/app";
 import { useSync } from "@/lib/offline/hooks";
@@ -44,6 +47,27 @@ const TILES = [
     sub: "Confirm · reveal contact · audit",
     icon: ShieldCheck,
     tone: "rose",
+  },
+  {
+    href: "/family",
+    title: "Find my family member",
+    sub: "Walk-in family search — tap what you remember",
+    icon: Users,
+    tone: "saffron",
+  },
+  {
+    href: "/triage",
+    title: "Triage queue",
+    sub: "Most at-risk open cases first · reunion ETA",
+    icon: ListChecks,
+    tone: "rose",
+  },
+  {
+    href: "/corridor",
+    title: "CCTV search corridor",
+    sub: "Where to look — cameras along the drift path",
+    icon: Camera,
+    tone: "teal",
   },
 ] as const;
 

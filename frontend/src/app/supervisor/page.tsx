@@ -30,6 +30,8 @@ import { AuditTrail } from "@/components/supervisor/AuditTrail";
 import { DuplicateReview } from "@/components/supervisor/DuplicateReview";
 import { PhotoCompare } from "@/components/supervisor/PhotoCompare";
 import { confirmMatch, purgeCase } from "@/components/supervisor/confirmEvent";
+import { ClaimGuard } from "@/components/supervisor/ClaimGuard";
+import { ReunionActions } from "@/components/supervisor/ReunionActions";
 
 export default function SupervisorPage() {
   const { role, language, setRole } = useApp();
@@ -211,7 +213,11 @@ export default function SupervisorPage() {
                 </div>
 
                 {isSupervisor ? (
-                  <RevealContact caseId={selected.case_id} masked={selected.mobile} />
+                  <>
+                    {/* F6 — gate the reveal with the claim-fraud guard */}
+                    <ClaimGuard caseId={selected.case_id} />
+                    <RevealContact caseId={selected.case_id} masked={selected.mobile} />
+                  </>
                 ) : (
                   <p className="rounded-2xl border-2 border-border bg-surface-2/60 p-4 text-sm text-muted">
                     Contact: <span className="font-mono">{selected.mobile ?? "—"}</span> (masked —
@@ -229,6 +235,10 @@ export default function SupervisorPage() {
                       {confirmed.queued && " (queued — will sync when online)"}
                     </span>
                   </div>
+
+                  {/* F5 handoff routing + F1 notify family */}
+                  <ReunionActions caseDoc={selected} />
+
                   {/* Privacy by design: purge PII once the person is reunited. */}
                   {!purged ? (
                     <div className="flex flex-wrap items-center gap-3">

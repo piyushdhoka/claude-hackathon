@@ -1,6 +1,15 @@
 // Thin API client for the Setu backend. All network calls go through here so the
 // offline layer can wrap/intercept them in one place.
-import type { Case, MatchCandidate, SetuEvent } from "./types";
+import type {
+  Case,
+  ClaimVerdict,
+  CorridorResult,
+  HandoffResult,
+  MatchCandidate,
+  NotifyResult,
+  SetuEvent,
+  TriageItem,
+} from "./types";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
@@ -103,4 +112,47 @@ export const api = {
   // --- geo ---
   hotspots: () => req<unknown[]>("/geo/hotspots"),
   kiosks: () => req<unknown[]>("/geo/kiosks"),
+
+  // --- F3 triage: vulnerability-ranked open cases + reunion ETA ---
+  triageQueue: (params: { sla_hours?: number; limit?: number } = {}, role?: Role) => {
+    const q = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])
+    ).toString();
+    return req<TriageItem[]>(`/triage/queue${q ? `?${q}` : ""}`, { role });
+  },
+
+  // --- F2 CCTV search corridor ---
+  corridor: (location: string, radius_m = 1500, top_k = 15) =>
+    req<CorridorResult>(
+      `/geo/corridor?location=${encodeURIComponent(location)}&radius_m=${radius_m}&top_k=${top_k}`
+    ),
+
+  // --- F5 reunion handoff routing ---
+  handoff: (location: string, k = 3) =>
+    req<HandoffResult>(`/geo/handoff?location=${encodeURIComponent(location)}&k=${k}`),
+
+  // --- F4 family self-search (describe lost person -> ranked found candidates) ---
+  searchFamily: (payload: Record<string, unknown>, top_k = 8) =>
+    req<MatchCandidate[]>(`/search/family?top_k=${top_k}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // --- F1 SMS/IVR notify-on-match ---
+  notifyMatch: (payload: { case_id: string; center: string; code: string }) =>
+    req<NotifyResult>("/notify/match", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  // --- F6 claim-fraud guard ---
+  assessClaim: (payload: {
+    case_id: string;
+    claim: Record<string, unknown>;
+    history?: unknown[];
+  }) =>
+    req<ClaimVerdict>("/claim/assess", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
