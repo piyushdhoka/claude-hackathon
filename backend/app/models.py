@@ -28,15 +28,27 @@ class CaseStatus(str, Enum):
 
 
 class Attributes(BaseModel):
-    """Structured, comparable attributes. Populated by the wizard taps and/or
-    Claude extraction from the free-text description."""
+    """Structured, comparable attributes. Populated by the wizard taps, Claude
+    extraction from the free-text description, and/or Claude VISION analysis of a
+    captured photo. Visual fields are the strongest signal for nameless cases."""
     clothing_colors: list[str] = Field(default_factory=list)
     clothing_type: Optional[str] = None
     marks: list[str] = Field(default_factory=list)  # rudraksha, tilak, spectacles, walking stick...
     mobility_confusion_flags: list[str] = Field(default_factory=list)  # memory_loss, hard_of_hearing...
-    apparent_gender: Optional[str] = None  # derived from description; may contradict `gender`
+    apparent_gender: Optional[str] = None  # derived from description/photo; may contradict `gender`
+    apparent_age_band: Optional[str] = None
     desc_quality: Optional[str] = None     # rich | sparse | contradictory
     contradicts_structured: bool = False   # description disagrees with structured gender/age
+
+    # --- Visual features (from Claude vision analysis of a photo) ---
+    build: Optional[str] = None            # slim / heavy / average / frail
+    hair: Optional[str] = None             # grey / bald / black / braided ...
+    complexion: Optional[str] = None
+    headwear: Optional[str] = None         # turban / cap / scarf / pallu ...
+    footwear: Optional[str] = None
+    accessories: list[str] = Field(default_factory=list)  # bag, stick, glasses, jewellery...
+    visual_quality: Optional[str] = None   # good | partial | poor (face/photo usability)
+    source: Optional[str] = None           # taps | description | vision | mixed
 
 
 class Case(BaseModel):
