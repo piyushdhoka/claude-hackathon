@@ -16,6 +16,7 @@ from .geo.router import router as geo_router
 from .match.router import router as match_router
 from .registry.router import router as registry_router
 from .registry.seed import seed
+from .triage.router import router as triage_router
 
 
 @asynccontextmanager
@@ -47,6 +48,7 @@ app.include_router(registry_router)
 app.include_router(match_router)
 app.include_router(geo_router)
 app.include_router(enrich_router)
+app.include_router(triage_router)
 
 
 @app.get("/health")

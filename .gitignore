@@ -1,1 +1,11 @@
 .env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# SQLite WAL sidecars (the seed DB itself stays tracked for tests)
+*.db-wal
+*.db-shm
