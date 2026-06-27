@@ -379,3 +379,118 @@ def _copy_result(result: dict[str, Any]) -> dict[str, Any]:
         "attributes": dict(result.get("attributes", {})),
         "contradicts_structured": bool(result.get("contradicts_structured", False)),
     }
+
+
+# --------------------------------------------------------------------------- #
+# compare_photos — Claude-vision same-person assist (human-in-the-loop)         #
+# --------------------------------------------------------------------------- #
+# This replaces a biometric face model: rather than auto-deciding identity, it
+# gives the operator a SECOND OPINION on whether two photos show the same person,
+# with a localized rationale. The human + family always make the final call.
+COMPARE_TOOL_NAME = "compare_persons"
+
+COMPARE_INPUT_SCHEMA: dict = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["verdict", "confidence", "reasoning"],
+    "properties": {
+        "verdict": {
+            "type": "string",
+            "enum": ["likely_same", "likely_different", "uncertain"],
+        },
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reasoning": {
+            "type": "string",
+            "description": "One or two short sentences citing the visible evidence "
+            "(face shape, age, build, distinctive marks), in the target language.",
+        },
+    },
+}
+
+COMPARE_SYSTEM = (
+    "You assist humanitarian reunification volunteers at Kumbh Mela by giving a "
+    "SECOND OPINION on whether two photos show the SAME person. You are assistive "
+    "only — a human and the family always confirm. Compare faces and stable "
+    "features (face shape, apparent age, build, distinctive marks); ignore "
+    "differences explained by lighting, angle, or expression. Be honest: if the "
+    "photos are too poor or partial, answer 'uncertain'. Never claim certainty "
+    "you do not have. Report via the compare_persons tool only."
+)
+
+_compare_cache: dict[str, dict[str, Any]] = {}
+
+_COMPARE_DEFAULT = {"verdict": "uncertain", "confidence": 0.0, "reasoning": ""}
+
+
+def compare_photos(
+    image_a_b64: str,
+    image_b_b64: str,
+    language: str = "en",
+    media_type_a: str = "image/jpeg",
+    media_type_b: str = "image/jpeg",
+) -> dict[str, Any]:
+    """Compare two photos for same-person, returning {verdict, confidence, reasoning}.
+
+    Assistive only. On any failure returns a safe 'uncertain' default; never raises.
+    """
+    if not image_a_b64 or not image_b_b64:
+        return dict(_COMPARE_DEFAULT)
+
+    ma = media_type_a if media_type_a in _ALLOWED_MEDIA else "image/jpeg"
+    mb = media_type_b if media_type_b in _ALLOWED_MEDIA else "image/jpeg"
+    language = (language or "en").strip() or "en"
+
+    key = claude._hash(
+        "compare",
+        hashlib.sha256(image_a_b64.encode()).hexdigest(),
+        hashlib.sha256(image_b_b64.encode()).hexdigest(),
+        language,
+    )
+    if key in _compare_cache:
+        return dict(_compare_cache[key])
+
+    client = claude._get_client()
+    if client is None:
+        return dict(_COMPARE_DEFAULT)
+
+    try:
+        response = client.messages.create(
+            model=settings.claude_explain_model,  # Opus 4.8 (multimodal)
+            max_tokens=_MAX_TOKENS,
+            thinking={"type": "adaptive"},
+            system=[{"type": "text", "text": COMPARE_SYSTEM,
+                     "cache_control": {"type": "ephemeral"}}],
+            tools=[{"name": COMPARE_TOOL_NAME, "strict": True,
+                    "input_schema": COMPARE_INPUT_SCHEMA}],
+            tool_choice={"type": "tool", "name": COMPARE_TOOL_NAME},
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "PERSON A:"},
+                    {"type": "image", "source": {"type": "base64", "media_type": ma, "data": image_a_b64}},
+                    {"type": "text", "text": "PERSON B:"},
+                    {"type": "image", "source": {"type": "base64", "media_type": mb, "data": image_b_b64}},
+                    {"type": "text", "text": f"Are A and B the same person? "
+                     f"Write reasoning in language: {language}. Call compare_persons once."},
+                ],
+            }],
+        )
+    except Exception as exc:
+        logger.warning("compare_photos API error: %s", exc)
+        return dict(_COMPARE_DEFAULT)
+
+    if getattr(response, "stop_reason", None) == "refusal":
+        return dict(_COMPARE_DEFAULT)
+
+    data = claude._tool_input(response, COMPARE_TOOL_NAME)
+    if not data:
+        return dict(_COMPARE_DEFAULT)
+
+    result = {
+        "verdict": data.get("verdict", "uncertain"),
+        "confidence": float(data.get("confidence", 0.0) or 0.0),
+        "reasoning": claude._clean_str(data.get("reasoning", "")) if hasattr(claude, "_clean_str")
+        else str(data.get("reasoning", "")),
+    }
+    _compare_cache[key] = result
+    return dict(result)
