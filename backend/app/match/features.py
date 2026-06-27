@@ -275,3 +275,75 @@ def score_description(qd: Optional[str], cd: Optional[str]) -> Optional[float]:
         return None
     # token_set_ratio is robust to the short, templated, often-contradictory text.
     return fuzz.token_set_ratio(a, b) / 100.0
+
+
+# ----------------------------------------------------------------------------
+# Visual features (from Claude-vision photo analysis) + face biometrics
+# ----------------------------------------------------------------------------
+
+# Visual attribute fields compared between two cases. List fields use set
+# overlap; scalar fields use exact (normalized) agreement.
+_VISUAL_LIST_FIELDS = ("clothing_colors", "marks", "accessories")
+_VISUAL_SCALAR_FIELDS = ("clothing_type", "build", "hair", "complexion",
+                         "headwear", "footwear")
+
+
+def _visual_tokens(attrs: Optional[dict[str, Any]]) -> dict[str, Any]:
+    """Pull comparable, normalized visual fields out of an Attributes dict."""
+    if not isinstance(attrs, dict):
+        return {}
+    out: dict[str, Any] = {}
+    for f in _VISUAL_LIST_FIELDS:
+        vals = attrs.get(f) or []
+        toks = {t for t in (_norm_token(v) for v in vals) if t}
+        if toks:
+            out[f] = toks
+    for f in _VISUAL_SCALAR_FIELDS:
+        t = _norm_token(attrs.get(f))
+        if t:
+            out[f] = t
+    return out
+
+
+def score_visual(qattrs: Optional[dict[str, Any]],
+                 cattrs: Optional[dict[str, Any]]) -> Optional[float]:
+    """Overlap of visual attributes (colours/clothing/marks/build/hair/...).
+
+    Field-wise agreement averaged over only the fields present on BOTH sides
+    (available-case within the feature). ``None`` when the two cases share no
+    comparable visual field — so text-only cases never fire this feature.
+    """
+    q, c = _visual_tokens(qattrs), _visual_tokens(cattrs)
+    shared = set(q) & set(c)
+    if not shared:
+        return None
+    total = 0.0
+    for f in shared:
+        if f in _VISUAL_LIST_FIELDS:
+            a, b = q[f], c[f]
+            inter, union = len(a & b), len(a | b)
+            total += (inter / union) if union else 0.0
+        else:  # scalar
+            total += 1.0 if q[f] == c[f] else 0.0
+    return total / len(shared)
+
+
+def score_face(qemb: Optional[list[float]],
+               cemb: Optional[list[float]]) -> Optional[float]:
+    """Cosine similarity of two face embeddings, mapped to [0, 1].
+
+    ``None`` when either embedding is missing (the common case for text-only
+    records), so available-case normalization drops the feature.
+    """
+    if not qemb or not cemb or len(qemb) != len(cemb):
+        return None
+    import numpy as np
+
+    a = np.asarray(qemb, dtype="float32")
+    b = np.asarray(cemb, dtype="float32")
+    na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
+    if na == 0.0 or nb == 0.0:
+        return None
+    cos = float(np.dot(a, b) / (na * nb))
+    # ArcFace cosine: same person typically >0.35, different ~0. Clamp negatives.
+    return max(0.0, min(1.0, cos))

@@ -35,6 +35,7 @@ from . import fusion
 _FEATURE_KEYS = (
     "name_fuzzy", "name_phonetic", "gender", "age_band", "geo",
     "time", "language", "state_district", "description",
+    "visual", "face",
 )
 
 
