@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=2.5.0",
     "onnxruntime>=1.27.0",
     "opencv-python>=4.13.0.92",
+    "opencv-python-headless>=4.13.0.92",
     "pandas>=3.0.3",
     "pydantic>=2.13.4",
     "pydantic-settings>=2.14.2",
