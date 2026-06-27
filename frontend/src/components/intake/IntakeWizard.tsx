@@ -652,54 +652,77 @@ function SuccessScreen({
   language: string;
   online: boolean;
 }) {
+  const center = (query.reporting_center as string) || "this center";
+  const name = (query.name as string) || null;
+  const strongMatches = matches?.filter((m) => m.score >= 45).length ?? 0;
+
   return (
     <div className="space-y-6">
-      <div className="rounded-3xl border-2 border-teal/40 bg-teal/5 p-6 text-center">
-        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-teal text-white shadow">
+      {/* celebratory header */}
+      <div className="relative overflow-hidden rounded-3xl border border-teal/40 bg-teal/5 p-6 text-center animate-pop">
+        <div
+          className="pointer-events-none absolute inset-x-0 -top-10 h-24 opacity-40 blur-2xl"
+          style={{ background: "radial-gradient(circle, rgba(12,107,98,0.45), transparent 70%)" }}
+        />
+        <span className="relative mx-auto grid h-16 w-16 place-items-center rounded-full bg-teal text-white shadow-md">
           <PartyPopper size={32} />
         </span>
-        <h2 className="mt-3 text-2xl font-extrabold">Saved</h2>
-        <p className="mt-1 text-muted">
+        <h2 className="relative mt-3 font-display text-2xl font-semibold">Saved</h2>
+        <p className="relative mt-1 text-muted">
           Case <span className="font-mono font-bold text-foreground">{created.case_id}</span>{" "}
-          registered at this center.
+          registered at <span className="font-semibold text-foreground">{center}</span>.
         </p>
         {created.queued && (
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-saffron/10 px-3 py-1 text-sm font-semibold text-saffron-dark">
+          <p className="relative mt-3 inline-flex items-center gap-1.5 rounded-full bg-saffron/12 px-3 py-1.5 text-sm font-semibold text-saffron-dark">
             <WifiOff size={14} /> Saved offline — will sync when back online.
           </p>
         )}
       </div>
 
-      {/* QR SLOT — <CaseToken/> (owned by another agent, components/token) drops in here */}
-      <section
-        data-slot="case-token"
-        className="rounded-3xl border-2 border-dashed border-indigo/40 bg-indigo/5 p-6 text-center"
-      >
-        <p className="text-sm font-bold uppercase tracking-wide text-indigo">Case token (QR)</p>
-        <p className="mt-1 text-sm text-muted">
-          The printable QR token for case{" "}
-          <span className="font-mono font-semibold">{created.case_id}</span> appears here.
+      {/* QR case token — printable claim slip, rendered fully offline */}
+      <section className="space-y-2">
+        <div className="flex items-center gap-3">
+          <h3 className="font-display text-base font-semibold">Case ticket</h3>
+          <span className="river-rule flex-1" />
+        </div>
+        <p className="text-sm text-muted">
+          Hand this slip to the family. Any volunteer at any center can scan it to
+          pull up the case — even offline.
         </p>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {/* <CaseToken caseId={created.case_id} /> — injected by the token agent */}
+        <div className="pt-1">
+          <CaseToken caseId={created.case_id} center={center} name={name} />
+        </div>
       </section>
 
-      {/* FOUND -> immediate match against the missing registry */}
+      {/* FOUND -> immediate cross-center match against the missing registry */}
       {mode === "found" && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <h3 className="text-xl font-bold">Possible matches in the missing registry</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="font-display text-lg font-semibold">
+              Cross-center matches
+            </h3>
             {matchLoading && <Loader2 size={18} className="animate-spin text-muted" />}
+            <span className="river-rule flex-1" />
           </div>
+          <p className="-mt-2 text-sm text-muted">
+            Searching the <span className="font-semibold text-rose">missing</span> registry
+            across every center for this found person.
+            {strongMatches > 0 && (
+              <span className="font-semibold text-teal">
+                {" "}
+                {strongMatches} promising candidate{strongMatches === 1 ? "" : "s"}.
+              </span>
+            )}
+          </p>
 
           {!online && (
-            <p className="rounded-xl bg-saffron/10 p-3 text-sm text-saffron-dark">
-              Offline — matches will run when connectivity returns.
+            <p className="flex items-center gap-2 rounded-xl bg-saffron/10 p-3 text-sm text-saffron-dark">
+              <WifiOff size={15} /> Offline — matched against the on-device registry mirror.
             </p>
           )}
 
           {!matchLoading && matches && matches.length === 0 && (
-            <p className="rounded-2xl border border-border bg-card p-5 text-muted">
+            <p className="rounded-2xl border border-border bg-surface p-5 text-muted">
               No strong matches yet. The case is searchable from every center now.
             </p>
           )}
@@ -710,6 +733,7 @@ function SuccessScreen({
                 key={c.case_id}
                 candidate={c}
                 query={query}
+                queryCenter={center}
                 language={language}
                 rank={i + 1}
                 defaultOpen={i === 0}
@@ -722,13 +746,13 @@ function SuccessScreen({
       <div className="flex flex-wrap gap-3">
         <a
           href="/intake"
-          className="inline-flex items-center gap-2 rounded-2xl bg-saffron px-6 py-3 font-bold text-white shadow active:scale-95"
+          className="inline-flex items-center gap-2 rounded-2xl bg-saffron px-6 py-3 font-bold text-white shadow-md active:scale-95"
         >
           <X size={18} /> Register another
         </a>
         <a
           href="/review"
-          className="inline-flex items-center gap-2 rounded-2xl border-2 border-border bg-card px-6 py-3 font-bold active:scale-95"
+          className="inline-flex items-center gap-2 rounded-2xl border border-border bg-surface px-6 py-3 font-bold active:scale-95"
         >
           <SearchIcon size={18} /> Go to Search &amp; Match
         </a>

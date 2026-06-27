@@ -1,11 +1,22 @@
 "use client";
 // One ranked MatchCandidate, rendered for the operator. Shows score + confidence
-// band, the candidate's key attributes, the per-feature CONTRIBUTIONS bar, the
-// candidate's visual_description, and (lazily, on demand) the Claude rationale via
-// api.explainMatch. Everything degrades gracefully when the backend is down.
+// band, a prominent CROSS-CENTER label (the candidate's reporting_center vs the
+// query's center — the cross-center "wow"), the candidate's key attributes, the
+// per-feature CONTRIBUTIONS bar, the candidate's visual_description, and (lazily,
+// on demand) the Claude rationale via api.explainMatch. Everything degrades
+// gracefully when the backend is down.
 import { useCallback, useState } from "react";
 import { clsx } from "clsx";
-import { Sparkles, MapPin, User, ChevronDown, ShieldCheck, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  MapPin,
+  User,
+  ChevronDown,
+  ShieldCheck,
+  Loader2,
+  Building2,
+  ArrowLeftRight,
+} from "lucide-react";
 import type { Case, MatchCandidate } from "@/lib/types";
 import { api } from "@/lib/api";
 import { bandForScore } from "./confidence";
@@ -14,6 +25,7 @@ import { ContributionsBar } from "./ContributionsBar";
 export function MatchCard({
   candidate,
   query,
+  queryCenter,
   language,
   rank,
   onConfirm,
@@ -23,6 +35,8 @@ export function MatchCard({
 }: {
   candidate: MatchCandidate;
   query?: Partial<Case>;
+  /** The querying case's center — used to highlight cross-center candidates. */
+  queryCenter?: string | null;
   language?: string;
   rank?: number;
   onConfirm?: (candidate: MatchCandidate) => void;
@@ -37,6 +51,10 @@ export function MatchCard({
   const [explainState, setExplainState] = useState<"idle" | "loading" | "done" | "error">(
     candidate.rationale ? "done" : "idle"
   );
+
+  const candCenter = c.reporting_center ?? null;
+  const qCenter = queryCenter ?? (query?.reporting_center as string | undefined) ?? null;
+  const crossCenter = !!candCenter && !!qCenter && candCenter !== qCenter;
 
   const explain = useCallback(async () => {
     if (explainState === "loading" || explainState === "done") return;
@@ -59,10 +77,24 @@ export function MatchCard({
   return (
     <article
       className={clsx(
-        "overflow-hidden rounded-3xl border-2 bg-card shadow-sm transition",
-        band.level === "high" ? "border-teal/40" : "border-border"
+        "overflow-hidden rounded-3xl border-2 bg-surface shadow-sm transition animate-rise",
+        band.level === "high"
+          ? "border-teal/45 shadow-md"
+          : crossCenter
+            ? "border-indigo/30"
+            : "border-border"
       )}
     >
+      {/* Cross-center ribbon — the headline differentiator */}
+      {crossCenter && (
+        <div className="flex items-center gap-2 bg-indigo/8 px-4 py-2 text-xs font-bold text-indigo">
+          <ArrowLeftRight size={14} className="shrink-0" />
+          <span className="truncate">
+            Cross-center · {qCenter} <span className="text-indigo/50">→</span> {candCenter}
+          </span>
+        </div>
+      )}
+
       {/* Header row */}
       <div className="flex items-center gap-4 p-4 sm:p-5">
         {/* Score dial */}
@@ -88,7 +120,7 @@ export function MatchCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             {rank != null && (
-              <span className="rounded-md bg-background px-1.5 py-0.5 font-mono text-xs font-bold text-muted">
+              <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-mono text-xs font-bold text-muted">
                 #{rank}
               </span>
             )}
@@ -114,19 +146,20 @@ export function MatchCard({
                 <MapPin size={13} /> {c.last_seen_location}
               </span>
             )}
-            {c.reporting_center && (
-              <span className="inline-flex items-center gap-1">
-                <ShieldCheck size={13} /> {c.reporting_center}
-              </span>
-            )}
           </p>
+          {candCenter && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-foreground/70">
+              <Building2 size={12} className={crossCenter ? "text-indigo" : "text-muted"} />
+              <span className={crossCenter ? "text-indigo" : ""}>{candCenter}</span>
+            </p>
+          )}
         </div>
 
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-border text-muted transition hover:bg-background"
+          className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-border text-muted transition hover:bg-surface-2"
           title={open ? "Hide why" : "Show why"}
         >
           <ChevronDown size={20} className={clsx("transition", open && "rotate-180")} />
@@ -135,7 +168,7 @@ export function MatchCard({
 
       {/* Expandable "why" */}
       {open && (
-        <div className="space-y-4 border-t border-border bg-background/40 p-4 sm:p-5">
+        <div className="space-y-4 border-t border-border bg-surface-2/50 p-4 sm:p-5">
           <div>
             <h4 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted">
               Why this score
@@ -197,7 +230,7 @@ export function MatchCard({
               type="button"
               onClick={() => onConfirm(candidate)}
               disabled={confirming}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-5 py-3 text-base font-bold text-white shadow transition active:scale-[0.98] disabled:opacity-60 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-teal px-5 py-3 text-base font-bold text-white shadow-md transition active:scale-[0.98] disabled:opacity-60 sm:w-auto"
             >
               {confirming ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
               {confirmLabel}
