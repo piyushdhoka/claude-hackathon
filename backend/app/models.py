@@ -74,6 +74,7 @@ class Case(BaseModel):
 
     # Description + structured attributes
     description: Optional[str] = None
+    visual_description: Optional[str] = None  # Claude-vision natural-language, localized
     attributes: Attributes = Field(default_factory=Attributes)
 
     # Biometric (face) — embedding only, never raw image in the matchable store

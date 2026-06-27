@@ -16,8 +16,18 @@ export interface Attributes {
   marks: string[];
   mobility_confusion_flags: string[];
   apparent_gender?: string | null;
+  apparent_age_band?: string | null;
   desc_quality?: string | null;
   contradicts_structured: boolean;
+  // Visual features (from Claude vision analysis of a photo)
+  build?: string | null;
+  hair?: string | null;
+  complexion?: string | null;
+  headwear?: string | null;
+  footwear?: string | null;
+  accessories?: string[];
+  visual_quality?: string | null;
+  source?: string | null;
 }
 
 export interface Case {
@@ -37,6 +47,7 @@ export interface Case {
   lng?: number | null;
   zone_id?: string | null;
   description?: string | null;
+  visual_description?: string | null;
   attributes: Attributes;
   photo_ref?: string | null;
   status: CaseStatus;

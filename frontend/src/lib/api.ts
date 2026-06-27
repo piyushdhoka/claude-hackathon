@@ -73,6 +73,26 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ strings, language }),
     }),
+  // Claude-vision analysis of a captured photo -> localized visual description + attributes
+  analyzeVision: (payload: {
+    image_b64: string;
+    media_type?: string;
+    language?: string;
+    gender?: string;
+    age_band?: string;
+  }) =>
+    req<{
+      analyzed: boolean;
+      visual_description: string | null;
+      attributes: Record<string, unknown>;
+      contradicts_structured?: boolean;
+    }>("/enrich/vision", { method: "POST", body: JSON.stringify(payload) }),
+  // Face biometric 1:N search (feature-flagged; returns 503 when disabled)
+  faceSearch: (payload: { image_b64: string; case_type?: string; top_k?: number }) =>
+    req<MatchCandidate[]>("/face/search", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 
   // --- geo ---
   hotspots: () => req<unknown[]>("/geo/hotspots"),
