@@ -33,6 +33,22 @@ def analyze_vision(payload: dict[str, Any] = Body(...)):
         return {"analyzed": False, "visual_description": None, "attributes": {}}
 
 
+@router.post("/compare")
+def compare(payload: dict[str, Any] = Body(...)):
+    """Claude-vision same-person second opinion on two photos (human-in-the-loop).
+    payload: { image_a_b64, image_b_b64, language? }"""
+    if not vision.available() or not payload.get("image_a_b64") or not payload.get("image_b_b64"):
+        return {"compared": False, "verdict": None, "confidence": None, "reasoning": None}
+    res = vision.compare_photos(
+        payload["image_a_b64"],
+        payload["image_b_b64"],
+        payload.get("language", "en"),
+        payload.get("media_type_a", "image/jpeg"),
+        payload.get("media_type_b", "image/jpeg"),
+    )
+    return {"compared": True, **res}
+
+
 @router.post("/attributes")
 def attributes(payload: dict[str, Any] = Body(...)):
     if not claude.available():
