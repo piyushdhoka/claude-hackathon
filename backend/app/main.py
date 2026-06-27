@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import init_db
+from .claim.router import router as claim_router
 from .enrich.router import router as enrich_router
 from .geo.router import router as geo_router
 from .match.router import router as match_router
@@ -53,6 +54,7 @@ app.include_router(enrich_router)
 app.include_router(triage_router)
 app.include_router(search_router)
 app.include_router(notify_router)
+app.include_router(claim_router)
 
 
 @app.get("/health")
