@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from . import service
+from . import corridor, service
 
 router = APIRouter(prefix="/geo", tags=["geo"])
 
@@ -22,6 +22,15 @@ def kiosks():
         return service.kiosk_recommendations()
     except NotImplementedError:
         raise HTTPException(501, "geo service not yet implemented")
+
+
+@router.get("/corridor")
+def corridor_search(location: str, radius_m: float = 1500.0, top_k: int = 15):
+    """CCTV cameras to review near a last-seen location, ranked + drift-biased."""
+    res = corridor.search_corridor(location, radius_m=radius_m, top_k=top_k)
+    if res is None:
+        raise HTTPException(404, "location not found")
+    return res
 
 
 @router.get("/geocode")
