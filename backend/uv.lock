@@ -847,6 +847,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "anthropic" },
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "jellyfish" },
     { name = "numpy" },
     { name = "opencv-python" },
@@ -871,6 +872,7 @@ dev = [
 requires-dist = [
     { name = "anthropic", specifier = ">=0.112.0" },
     { name = "fastapi", specifier = ">=0.138.1" },
+    { name = "httpx", specifier = ">=0.28.1" },
     { name = "jellyfish", specifier = ">=1.2.1" },
     { name = "numpy", specifier = ">=2.5.0" },
     { name = "opencv-python", specifier = ">=4.13.0.92" },

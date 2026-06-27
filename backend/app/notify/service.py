@@ -17,6 +17,14 @@ from . import templates
 from .provider import SmsProvider, get_provider
 
 
+def _deliver(provider: SmsProvider, to: str, message: str, channel: str) -> None:
+    """Send via the requested channel; IVR falls back to SMS if unsupported."""
+    if channel == "ivr" and hasattr(provider, "call"):
+        provider.call(to, message)  # type: ignore[attr-defined]
+    else:
+        provider.send(to, message)
+
+
 def _build_message(case: dict[str, Any], center: str, code: str) -> str:
     """Localized notify text. Tries Claude (online); always safe-falls back to the
     bundled template so a missing key / dead network never blocks the send."""
@@ -36,6 +44,7 @@ def notify_match(
     *,
     center: str,
     code: str,
+    channel: str = "sms",
     provider: Optional[SmsProvider] = None,
 ) -> dict[str, Any]:
     """Notify the reporter that their missing person was found.
@@ -55,7 +64,7 @@ def notify_match(
     provider = provider or get_provider()
     language = missing_case.get("language") or "English"
     message = _build_message(missing_case, center, code)
-    provider.send(raw, message)
+    _deliver(provider, raw, message, channel)
 
     case_id = missing_case.get("case_id")
     if case_id:
@@ -65,12 +74,44 @@ def notify_match(
             case_id=case_id,
             ts=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             actor="system",
-            payload={"channel": provider.name, "masked_to": masked, "code": code},
+            payload={"channel": f"{provider.name}:{channel}", "masked_to": masked, "code": code},
         ))
 
     return {
         "sent": True,
-        "channel": provider.name,
+        "channel": f"{provider.name}:{channel}",
+        "masked_to": masked,
+        "language": language,
+        "message": message,
+    }
+
+
+def notify_direct(
+    to: str,
+    *,
+    center: str,
+    code: str,
+    language: str = "English",
+    channel: str = "sms",
+    provider: Optional[SmsProvider] = None,
+) -> dict[str, Any]:
+    """Send a notify message to an explicit number (test/demo path).
+
+    No case/consent lookup — the caller supplies the number directly. Useful for
+    verifying real SMS/IVR delivery to a known phone. Returns a masked result.
+    """
+    raw = (to or "").strip()
+    masked = store.mask_mobile(raw)
+    if not raw:
+        return {"sent": False, "reason": "no_number", "masked_to": masked}
+
+    provider = provider or get_provider()
+    message = templates.render(language, center, code)
+    _deliver(provider, raw, message, channel)
+
+    return {
+        "sent": True,
+        "channel": f"{provider.name}:{channel}",
         "masked_to": masked,
         "language": language,
         "message": message,

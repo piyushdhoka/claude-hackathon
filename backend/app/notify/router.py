@@ -21,4 +21,21 @@ def notify_match(payload: dict = Body(...)):
         case,
         center=payload.get("center", "the help center"),
         code=payload.get("code", "------"),
+        channel=payload.get("channel", "sms"),
+    )
+
+
+@router.post("/test")
+def notify_test(payload: dict = Body(...)):
+    """Send a notify message to an explicit number (verify real SMS/IVR delivery).
+    Body: {to, center?, code?, language?, channel?('sms'|'ivr')}."""
+    to = payload.get("to")
+    if not to:
+        raise HTTPException(400, "'to' (phone number, e.g. +919579925834) is required")
+    return service.notify_direct(
+        to,
+        center=payload.get("center", "the help center"),
+        code=payload.get("code", "0000"),
+        language=payload.get("language", "English"),
+        channel=payload.get("channel", "sms"),
     )

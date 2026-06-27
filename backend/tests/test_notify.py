@@ -1,7 +1,7 @@
 """F1 SMS/IVR notify-on-match tests."""
 from app.notify import templates
 from app.notify.provider import MockProvider
-from app.notify.service import notify_match
+from app.notify.service import notify_direct, notify_match
 from app.registry import store
 
 
@@ -63,6 +63,43 @@ def test_notify_logs_pii_notified_audit_event():
 def test_template_falls_back_to_english_for_unknown_language():
     msg = templates.render("Klingon", "Center A", "999")
     assert msg == templates.render("English", "Center A", "999")
+
+
+def test_notify_direct_sms_to_given_number():
+    prov = MockProvider()
+    res = notify_direct(
+        "+919579925834", center="Panchavati Center", code="4821",
+        language="Marathi", channel="sms", provider=prov,
+    )
+    assert res["sent"] is True
+    assert prov.sent[0]["to"] == "+919579925834"
+    assert prov.sent[0]["channel"] == "sms"
+    assert "•" in res["masked_to"]
+
+
+def test_notify_direct_ivr_uses_call_channel():
+    prov = MockProvider()
+    res = notify_direct(
+        "+919579925834", center="X", code="1", channel="ivr", provider=prov,
+    )
+    assert res["sent"] is True
+    assert prov.sent[0]["channel"] == "ivr"
+
+
+def test_notify_test_endpoint_sends_to_given_number():
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    with TestClient(app) as client:
+        r = client.post("/notify/test", json={
+            "to": "+919579925834", "center": "Panchavati Center",
+            "code": "4821", "channel": "sms",
+        })
+    assert r.status_code == 200
+    body = r.json()
+    assert body["sent"] is True
+    assert "•" in body["masked_to"]
 
 
 def test_notify_endpoint_masks_and_handles_missing_case():

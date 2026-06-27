@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     # --- Secrets ---
     anthropic_api_key: str = ""
 
+    # --- Notify (F1 SMS/IVR) ---
+    # "mock" (default, offline-safe) or "twilio" (real SMS + IVR voice).
+    notify_provider: str = "mock"
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from: str = ""        # SMS sender (Twilio number / Messaging Service SID)
+    twilio_voice_from: str = ""  # IVR caller id (defaults to twilio_from)
+
     # --- Models (latest Claude family) ---
     # We have ample credits -> default the quality-sensitive, multilingual paths to Opus 4.8.
     # Flip extract -> sonnet/haiku if bulk-enriching all 2500 records and latency matters.
