@@ -241,6 +241,19 @@ def _case_points() -> list[tuple[float, float]]:
     return pts
 
 
+@lru_cache(maxsize=1)
+def _location_report_counts() -> dict[str, int]:
+    """Number of registry cases per canonical ``last_seen_location`` value."""
+    from ..registry import store
+
+    counts: dict[str, int] = {}
+    for case in store.iter_cases():
+        loc = case.get("last_seen_location")
+        if loc:
+            counts[loc] = counts.get(loc, 0) + 1
+    return counts
+
+
 def _reports_near(lat: float, lng: float, radius_m: float = DENSITY_RADIUS_M) -> int:
     return sum(
         1 for clat, clng in _case_points()
@@ -273,53 +286,123 @@ _CATEGORY_WEIGHT: dict[str, float] = {
 _RISK_BONUS: dict[str, float] = {"very high": 1.25, "high": 1.1, "medium": 1.0}
 
 
+# Name keywords that reveal a node's true separation character regardless of how
+# the nearest KML feature happened to be labelled (e.g. "Madsangvi Transit" is a
+# transfer node even if its nearest KML point is tagged "Outer parking").
+_NAME_CATEGORY_HINTS: list[tuple[str, str]] = [
+    ("transit", "transfer node"),
+    ("station", "transfer node"),
+    ("bus stand", "transfer node"),
+    ("ghat", "ghat/landmark"),
+    ("kund", "ghat/landmark"),
+    ("sangam", "ghat/landmark"),
+    ("gate", "no-vehicle pressure zone"),
+]
+
+
+def _name_category(name: str) -> Optional[str]:
+    low = (name or "").lower()
+    for kw, cat in _NAME_CATEGORY_HINTS:
+        if kw in low:
+            return cat
+    return None
+
+
 def _category_weight(node: dict[str, Any]) -> float:
     cat = (node.get("category") or "").strip().lower()
     w = _CATEGORY_WEIGHT.get(cat, 1.0)
     if node.get("kind") == "landmark":
         w = max(w, _CATEGORY_WEIGHT["ghat/landmark"])
+    # Lift weight if the node's NAME implies a higher-pressure category.
+    name_cat = _name_category(node.get("name", ""))
+    if name_cat:
+        w = max(w, _CATEGORY_WEIGHT.get(name_cat, w))
     w *= _RISK_BONUS.get((node.get("risk") or "").strip().lower(), 1.0)
     return w
 
 
+def _nearest_kml_node(lat: float, lng: float, max_m: float = 350.0) -> Optional[dict[str, Any]]:
+    """Nearest KML chokepoint/landmark to a point, for category enrichment."""
+    best, best_d = None, float("inf")
+    for n in _chokepoints() + _landmarks():
+        d = haversine_m(lat, lng, n["lat"], n["lng"])
+        if d < best_d:
+            best, best_d = n, d
+    return best if best is not None and best_d <= max_m else None
+
+
 @lru_cache(maxsize=1)
 def _scored_nodes() -> list[dict[str, Any]]:
-    """Score every candidate node by report-density x category-weight.
+    """Rank separation-risk nodes by ``report_density x category_weight``.
 
-    Deduplicates near-identical landmark points (the KML has Goda Ghat 1/2,
-    Ganga Ghat 1/2 etc. within metres) by snapping to a small grid and keeping
-    the highest-weighted representative.
+    The 20 canonical ``last_seen_location`` values are the primary nodes (they
+    carry the real per-location report counts, so the known high-density nodes —
+    Madsangvi Transit, Sadhugram Gate 2, Ramkund Ghat, Nashik Road Station —
+    rank at the top). Each is enriched with the category of its nearest KML
+    chokepoint/landmark. KML chokepoints / transfer nodes / landmarks that are
+    NOT within ~350 m of any canonical location are added as secondary nodes so
+    the map still surfaces under-reported pressure points (their report density
+    comes from nearby cases). Near-duplicate points are collapsed on a ~120 m
+    grid, keeping the highest report count.
     """
-    raw = _chokepoints() + _landmarks()
-
-    # Collapse landmarks/chokepoints that sit within ~80 m of each other.
-    seen: dict[tuple[int, int], dict[str, Any]] = {}
     nodes: list[dict[str, Any]] = []
-    for n in raw:
-        gkey = (round(n["lat"] * 1400), round(n["lng"] * 1400))  # ~80 m grid
-        if gkey in seen:
-            # keep whichever has the heavier category weight / cleaner name
-            if _category_weight(n) > _category_weight(seen[gkey]):
-                seen[gkey].update(n)
-            continue
-        seen[gkey] = n
-        nodes.append(n)
 
+    # --- primary: the canonical last_seen_location nodes ---
+    canonical_pts: list[tuple[float, float]] = []
+    counts = _location_report_counts()
+    for name, rec in _location_coords().items():
+        lat, lng = float(rec["lat"]), float(rec["lng"])
+        canonical_pts.append((lat, lng))
+        km = _nearest_kml_node(lat, lng)
+        nodes.append({
+            "name": name,
+            "lat": lat, "lng": lng,
+            "category": (km.get("category") if km else None) or "last_seen_location",
+            "kind": km.get("kind") if km else "location",
+            "risk": km.get("risk") if km else None,
+            "reports": counts.get(name, 0),
+        })
+
+    # --- secondary: KML nodes outside any canonical location's density radius ---
+    # Excluding within DENSITY_RADIUS_M prevents a secondary node from
+    # double-counting a canonical cluster's reports through its own radius sweep.
+    for n in _chokepoints() + _landmarks():
+        if any(haversine_m(n["lat"], n["lng"], lat, lng) <= DENSITY_RADIUS_M
+               for lat, lng in canonical_pts):
+            continue
+        nodes.append({
+            "name": n["name"],
+            "lat": n["lat"], "lng": n["lng"],
+            "category": n.get("category") or n.get("kind"),
+            "kind": n.get("kind"),
+            "risk": n.get("risk"),
+            "reports": _reports_near(n["lat"], n["lng"]),
+        })
+
+    # --- collapse near-duplicates on a ~120 m grid (keep heaviest) ---
+    by_cell: dict[tuple[int, int], dict[str, Any]] = {}
+    for n in nodes:
+        gkey = (round(n["lat"] * 900), round(n["lng"] * 900))
+        cur = by_cell.get(gkey)
+        if cur is None or n["reports"] > cur["reports"]:
+            by_cell[gkey] = n
+    nodes = list(by_cell.values())
+
+    # --- score: report_density * category_weight, normalised 0..1 ---
     scored: list[dict[str, Any]] = []
     for n in nodes:
-        reports = _reports_near(n["lat"], n["lng"])
         weight = _category_weight(n)
-        raw_score = reports * weight
+        raw = n["reports"] * weight
         scored.append({
             "name": n["name"],
             "lat": round(n["lat"], 6),
             "lng": round(n["lng"], 6),
-            "category": n.get("category") or n.get("kind"),
+            "category": n["category"],
             "kind": n.get("kind"),
             "risk": n.get("risk"),
-            "reports": reports,
+            "reports": n["reports"],
             "weight": round(weight, 3),
-            "_raw": raw_score,
+            "_raw": raw,
         })
 
     max_raw = max((s["_raw"] for s in scored), default=0.0) or 1.0
@@ -463,7 +546,7 @@ def build_geojson() -> dict[str, Any]:
 
     # Invalidate cached GeoJSON-derived state so callers see the rebuild.
     for fn in (_zones, _cameras, _landmarks, _chokepoints, _police,
-               _scored_nodes, _coverage_anchors):
+               _scored_nodes, _coverage_anchors, _case_points):
         fn.cache_clear()
 
     return {"written_to": str(settings.geojson_out), "files": summary}
