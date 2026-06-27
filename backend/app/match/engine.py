@@ -73,6 +73,11 @@ def _compute_scores(
             query.get("state"), query.get("district"),
             cand.get("state"), cand.get("district"), sub["state_district"]),
         "description": F.score_description(query.get("description"), cand.get("description")),
+        # Visual: overlap of Claude-vision attributes; Face: embedding cosine.
+        # Both return None (dropped) unless BOTH sides carry a photo, so text-only
+        # cases score exactly as before.
+        "visual": F.score_visual(query.get("attributes"), cand.get("attributes")),
+        "face": F.score_face(query.get("face_embedding"), cand.get("face_embedding")),
     }
 
 
