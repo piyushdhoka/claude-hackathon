@@ -31,6 +31,18 @@ def attributes(payload: dict[str, Any] = Body(...)):
         return {"enriched": False, "attributes": {}}
 
 
+@router.post("/translate")
+def translate(payload: dict[str, Any] = Body(...)):
+    """Claude-powered multilingual translation of UI/voice-prompt strings."""
+    if not claude.available():
+        return {"translated": False, "strings": payload.get("strings", {})}
+    try:
+        out = claude.translate(payload.get("strings", {}), payload.get("language", "Hindi"))
+        return {"translated": True, "strings": out}
+    except NotImplementedError:
+        return {"translated": False, "strings": payload.get("strings", {})}
+
+
 @router.post("/explain")
 def explain(payload: dict[str, Any] = Body(...)):
     if not claude.available():

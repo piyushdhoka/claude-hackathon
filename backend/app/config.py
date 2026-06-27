@@ -21,8 +21,12 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
 
     # --- Models (latest Claude family) ---
-    claude_extract_model: str = "claude-haiku-4-5"      # cheap, high-volume attribute extraction
-    claude_explain_model: str = "claude-sonnet-4-6"     # faithful localized match explanations
+    # We have ample credits -> default the quality-sensitive, multilingual paths to Opus 4.8.
+    # Flip extract -> sonnet/haiku if bulk-enriching all 2500 records and latency matters.
+    claude_extract_model: str = "claude-opus-4-8"       # structured attribute extraction (multilingual)
+    claude_explain_model: str = "claude-opus-4-8"       # faithful localized match explanations
+    claude_translate_model: str = "claude-opus-4-8"     # wizard/voice prompt translation (10 languages)
+    claude_fast_model: str = "claude-haiku-4-5"         # available fallback for high-volume/low-latency
 
     # --- Feature flags ---
     face_match_enabled: bool = False

@@ -1,0 +1,142 @@
+{
+  "Adgaon Parking": {
+    "lat": 20.0251185,
+    "lng": 73.4130156,
+    "matched_to": "Adgaon",
+    "score": 100.0,
+    "source": "chokepoint"
+  },
+  "Bus Stand Nashik": {
+    "lat": 19.9972,
+    "lng": 73.7799,
+    "matched_to": "CBS / Central Bus Stand",
+    "score": 72.0,
+    "source": "chokepoint"
+  },
+  "Dasak Ghat": {
+    "lat": 20.0064,
+    "lng": 73.7902,
+    "matched_to": "Godavari Ghat approaches",
+    "score": 57.1,
+    "source": "chokepoint"
+  },
+  "Dindori Road Crossing": {
+    "lat": 20.0344735,
+    "lng": 73.8032903,
+    "matched_to": "Dindori Road parking belt",
+    "score": 73.9,
+    "source": "chokepoint"
+  },
+  "Gauri Patangan": {
+    "lat": 20.0078,
+    "lng": 73.7638,
+    "matched_to": "Gangapur Naka",
+    "score": 51.9,
+    "source": "chokepoint"
+  },
+  "Kapila Sangam": {
+    "lat": 19.988147,
+    "lng": 73.7840439,
+    "matched_to": "Shatabdi Hospital",
+    "score": 46.7,
+    "source": "chokepoint"
+  },
+  "Kushavart Kund": {
+    "lat": 20.031,
+    "lng": 73.719,
+    "matched_to": "Dugaon Phata",
+    "score": 46.2,
+    "source": "chokepoint"
+  },
+  "Laxmi Narayan Ghat": {
+    "lat": 20.0224,
+    "lng": 73.8038,
+    "matched_to": "Lakshmi Narayan Trust Hanuman Nagar",
+    "score": 56.0,
+    "source": "chokepoint"
+  },
+  "Madsangvi Transit": {
+    "lat": 20.066,
+    "lng": 73.883,
+    "matched_to": "Madsangavi",
+    "score": 66.7,
+    "source": "chokepoint"
+  },
+  "Main Police Chowki": {
+    "lat": 19.997799,
+    "lng": 73.789208,
+    "matched_to": "Bhadrakali Police station",
+    "score": 65.1,
+    "source": "police"
+  },
+  "Nandur Ghat": {
+    "lat": 20.0048,
+    "lng": 73.831,
+    "matched_to": "Nandur Naka",
+    "score": 72.7,
+    "source": "chokepoint"
+  },
+  "Nashik Road Station": {
+    "lat": 19.94884,
+    "lng": 73.84059,
+    "matched_to": "Nashik Road Railway Station",
+    "score": 100.0,
+    "source": "chokepoint"
+  },
+  "Panchavati Circle": {
+    "lat": 20.0067,
+    "lng": 73.79062,
+    "matched_to": "Panchavati / Ramkund access zone",
+    "score": 74.1,
+    "source": "chokepoint"
+  },
+  "Rajur Bahula": {
+    "lat": 19.946,
+    "lng": 73.673,
+    "matched_to": "Rajur Bahula",
+    "score": 100.0,
+    "source": "chokepoint"
+  },
+  "Ramkund Ghat": {
+    "lat": 20.0067,
+    "lng": 73.79062,
+    "matched_to": "Ramkund",
+    "score": 100.0,
+    "source": "chokepoint"
+  },
+  "Sadhugram Gate 1": {
+    "lat": 19.9645,
+    "lng": 73.821,
+    "matched_to": "Fame Signal",
+    "score": 44.4,
+    "source": "chokepoint"
+  },
+  "Sadhugram Gate 2": {
+    "lat": 19.9645,
+    "lng": 73.821,
+    "matched_to": "Fame Signal",
+    "score": 44.4,
+    "source": "chokepoint"
+  },
+  "Takli Sangam": {
+    "lat": 20.0078,
+    "lng": 73.7638,
+    "matched_to": "Gangapur Naka",
+    "score": 56.0,
+    "source": "chokepoint"
+  },
+  "Trimbak Road": {
+    "lat": 19.9663708,
+    "lng": 73.6615256,
+    "matched_to": "Trimbak Road exit / Nashik-Trimbak Road",
+    "score": 100.0,
+    "source": "chokepoint"
+  },
+  "Trimbakeshwar Approach": {
+    "lat": 20.0057,
+    "lng": 73.792,
+    "matched_to": "Gadge Maharaj Bridge to Talakuteshwar",
+    "score": 44.1,
+    "source": "chokepoint"
+  }
+}

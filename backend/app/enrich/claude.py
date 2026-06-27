@@ -12,6 +12,10 @@ Public contract:
         -> faithful, localized one/two-line rationale. MUST narrate only the supplied
            contributions/score; never invent a number.
 
+    translate(strings: dict[str,str], target_language: str) -> dict[str,str]
+        -> Claude-powered multilingual translation of UI/wizard/voice-prompt strings into
+           any of the 10 languages. Used to localize the phoneless console + spoken prompts.
+
     available() -> bool   # True if ANTHROPIC_API_KEY present
 
 Implementation notes for the agent:
@@ -52,3 +56,7 @@ def explain_match(
     language: str = "Hindi",
 ) -> str:
     raise NotImplementedError("enrich.claude.explain_match not yet implemented")
+
+
+def translate(strings: dict[str, str], target_language: str) -> dict[str, str]:
+    raise NotImplementedError("enrich.claude.translate not yet implemented")
