@@ -448,7 +448,7 @@ export function IntakeWizard() {
 
         {step.key === "contact" && (
           <div className="max-w-md space-y-5">
-            <p className="rounded-xl bg-saffron/10 p-3 text-sm font-medium text-saffron-dark">
+            <p className="rounded-xl bg-saffron/12 p-3 text-sm font-medium text-saffron-dark">
               Both are optional. Many pilgrims have no phone — skip if unknown.
             </p>
             <label className="block">

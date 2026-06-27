@@ -1,10 +1,13 @@
 "use client";
 // Supervisor console. Human-in-the-loop only — nothing auto-confirms.
 //   - pick a case, see ranked candidates (MatchCard) and CONFIRM a match
-//     (submits a match.confirmed event)
+//     (submits a match.confirmed event via the offline-first write-path)
 //   - REVEAL contact: re-fetch as supervisor so the mobile unmasks (logged-feeling)
 //   - DUPLICATE review (api.dedupe)
+//   - PHOTO COMPARE (api.comparePhotos) — assistive "same person?" second opinion
 //   - AUDIT trail (api.getAudit)
+// Data calls here are intentionally live (supervisor actions need the backend for
+// PII + the audit log); they are unchanged from the wired contract.
 import { useCallback, useEffect, useState } from "react";
 import {
   Loader2,
@@ -14,6 +17,8 @@ import {
   CheckCircle2,
   AlertTriangle,
   Info,
+  ArrowLeft,
+  Building2,
 } from "lucide-react";
 import { useApp } from "@/store/app";
 import { api } from "@/lib/api";
@@ -23,6 +28,7 @@ import { MatchCard } from "@/components/review/MatchCard";
 import { RevealContact } from "@/components/supervisor/RevealContact";
 import { AuditTrail } from "@/components/supervisor/AuditTrail";
 import { DuplicateReview } from "@/components/supervisor/DuplicateReview";
+import { PhotoCompare } from "@/components/supervisor/PhotoCompare";
 import { confirmMatch } from "@/components/supervisor/confirmEvent";
 
 export default function SupervisorPage() {
@@ -82,58 +88,64 @@ export default function SupervisorPage() {
   );
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3 animate-rise">
         <div>
-          <h1 className="flex items-center gap-2 text-3xl font-extrabold tracking-tight">
-            <ShieldCheck className="text-indigo" /> Supervisor console
+          <h1 className="flex items-center gap-2 font-display text-2xl font-semibold tracking-tight sm:text-3xl">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-indigo/12 text-indigo">
+              <ShieldCheck size={20} />
+            </span>
+            Supervisor console
           </h1>
-          <p className="text-muted">
-            Confirm matches, reveal protected contacts, review duplicates, and inspect the audit
-            trail. Every confirmation is a human decision.
+          <p className="mt-1 text-sm text-muted sm:text-base">
+            Confirm matches, reveal protected contacts, review duplicates, and inspect the
+            audit trail. Every confirmation is a human decision.
           </p>
         </div>
         {!isSupervisor && (
           <button
             type="button"
             onClick={() => setRole("supervisor")}
-            className="inline-flex items-center gap-2 rounded-xl bg-indigo px-4 py-2 text-sm font-bold text-white active:scale-95"
+            className="inline-flex items-center gap-2 rounded-2xl bg-indigo px-4 py-2.5 text-sm font-bold text-white shadow-sm active:scale-95"
           >
-            Switch to supervisor role
+            <ShieldCheck size={16} /> Switch to supervisor
           </button>
         )}
       </header>
 
       {!isSupervisor && (
         <p className="flex items-center gap-2 rounded-xl bg-indigo/10 p-3 text-sm text-indigo">
-          <Info size={16} /> You are in <b>operator</b> role. Contact reveal requires supervisor
-          role — switch above to unmask PII.
+          <Info size={16} className="shrink-0" /> You are in <b>operator</b> role. Contact reveal
+          requires supervisor role — switch above to unmask PII.
         </p>
       )}
 
       {loadErr && (
-        <p className="flex items-center gap-2 rounded-xl bg-saffron/10 p-3 text-sm text-saffron-dark">
-          <AlertTriangle size={16} /> Could not reach the registry (backend at 127.0.0.1:8000).
+        <p className="flex items-center gap-2 rounded-xl bg-saffron/12 p-3 text-sm font-medium text-saffron-dark">
+          <AlertTriangle size={16} className="shrink-0" /> Could not reach the registry (backend at
+          127.0.0.1:8000). Supervisor actions need the live backend.
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         {/* left: case picker */}
-        <aside className="space-y-3">
-          <CaseFilters value={filter} onChange={setFilter} />
-          {cases == null ? (
-            <p className="flex items-center gap-2 p-4 text-muted">
-              <Loader2 size={16} className="animate-spin" /> Loading…
-            </p>
-          ) : (
-            <CaseList cases={cases} selectedId={selected?.case_id} onSelect={pick} filter={filter} />
-          )}
+        <aside className={selected ? "hidden lg:block" : "block"}>
+          <div className="space-y-3 lg:sticky lg:top-20">
+            <CaseFilters value={filter} onChange={setFilter} />
+            {cases == null ? (
+              <p className="flex items-center gap-2 p-4 text-muted">
+                <Loader2 size={16} className="animate-spin" /> Loading…
+              </p>
+            ) : (
+              <CaseList cases={cases} selectedId={selected?.case_id} onSelect={pick} filter={filter} />
+            )}
+          </div>
         </aside>
 
         {/* right: workspace */}
         <section className="space-y-5">
           {!selected && (
-            <div className="grid place-items-center rounded-3xl border-2 border-dashed border-border bg-card p-12 text-center text-muted">
+            <div className="grid place-items-center rounded-3xl border-2 border-dashed border-border bg-surface p-10 text-center text-muted sm:p-12">
               <ShieldCheck size={32} className="mb-2 text-indigo/50" />
               Select a case to review.
             </div>
@@ -141,11 +153,22 @@ export default function SupervisorPage() {
 
           {selected && (
             <>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setMatches(null);
+                }}
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-bold text-foreground/80 active:scale-95 lg:hidden"
+              >
+                <ArrowLeft size={16} /> Back to cases
+              </button>
+
               {/* case header + reveal contact */}
-              <div className="space-y-4 rounded-3xl border-2 border-border bg-card p-5">
+              <div className="space-y-4 rounded-3xl border-2 border-border bg-surface p-5 shadow-sm animate-rise">
                 <div className="flex items-center gap-3">
                   <span
-                    className={`grid h-12 w-12 place-items-center rounded-2xl text-white ${
+                    className={`grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white ${
                       selected.case_type === "found" ? "bg-teal" : "bg-rose"
                     }`}
                   >
@@ -157,7 +180,9 @@ export default function SupervisorPage() {
                       <span className="text-sm font-medium text-muted">({selected.case_type})</span>
                     </h2>
                     <p className="flex flex-wrap items-center gap-x-3 text-sm text-muted">
-                      <span>{selected.gender} · {selected.age_band}</span>
+                      <span>
+                        {selected.gender} · {selected.age_band}
+                      </span>
                       {selected.last_seen_location && (
                         <span className="inline-flex items-center gap-1">
                           <MapPin size={13} /> {selected.last_seen_location}
@@ -165,13 +190,18 @@ export default function SupervisorPage() {
                       )}
                       <span className="font-mono text-xs">{selected.case_id}</span>
                     </p>
+                    {selected.reporting_center && (
+                      <p className="mt-0.5 inline-flex items-center gap-1 text-xs font-semibold text-foreground/70">
+                        <Building2 size={12} /> {selected.reporting_center}
+                      </p>
+                    )}
                   </div>
                 </div>
 
                 {isSupervisor ? (
                   <RevealContact caseId={selected.case_id} masked={selected.mobile} />
                 ) : (
-                  <p className="rounded-2xl border-2 border-border bg-background p-4 text-sm text-muted">
+                  <p className="rounded-2xl border-2 border-border bg-surface-2/60 p-4 text-sm text-muted">
                     Contact: <span className="font-mono">{selected.mobile ?? "—"}</span> (masked —
                     supervisor role required to reveal).
                   </p>
@@ -179,8 +209,8 @@ export default function SupervisorPage() {
               </div>
 
               {confirmed && (
-                <div className="flex items-center gap-2 rounded-2xl border-2 border-teal/40 bg-teal/5 p-4 text-teal">
-                  <CheckCircle2 size={20} />
+                <div className="flex items-center gap-2 rounded-2xl border-2 border-teal/40 bg-teal/5 p-4 text-teal animate-pop">
+                  <CheckCircle2 size={20} className="shrink-0" />
                   <span className="font-semibold">
                     Match confirmed with{" "}
                     <span className="font-mono">{confirmed.matchedId}</span>.
@@ -191,16 +221,19 @@ export default function SupervisorPage() {
 
               {/* candidate matches with confirm */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold uppercase tracking-wide text-muted">
-                  Candidate matches
-                </h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-muted">
+                    Candidate matches
+                  </h3>
+                  <span className="river-rule flex-1" />
+                </div>
                 {matching && (
                   <p className="flex items-center gap-2 text-muted">
                     <Loader2 size={18} className="animate-spin" /> Finding matches…
                   </p>
                 )}
                 {!matching && matches && matches.length === 0 && (
-                  <p className="rounded-2xl border border-border bg-card p-5 text-muted">
+                  <p className="rounded-2xl border border-border bg-surface p-5 text-muted">
                     No candidates returned.
                   </p>
                 )}
@@ -209,6 +242,7 @@ export default function SupervisorPage() {
                     key={c.case_id}
                     candidate={c}
                     query={selected}
+                    queryCenter={selected.reporting_center}
                     language={language}
                     rank={i + 1}
                     defaultOpen={i === 0}
@@ -219,11 +253,16 @@ export default function SupervisorPage() {
                 ))}
               </div>
 
+              {/* photo compare (assistive second opinion) */}
+              <div className="rounded-3xl border-2 border-border bg-surface p-5">
+                <PhotoCompare language={language} />
+              </div>
+
               {/* duplicate review + audit */}
-              <div className="rounded-3xl border-2 border-border bg-card p-5">
+              <div className="rounded-3xl border-2 border-border bg-surface p-5">
                 <DuplicateReview caseDoc={selected} language={language} />
               </div>
-              <div className="rounded-3xl border-2 border-border bg-card p-5">
+              <div className="rounded-3xl border-2 border-border bg-surface p-5">
                 <AuditTrail caseId={selected.case_id} />
               </div>
             </>

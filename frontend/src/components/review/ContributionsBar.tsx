@@ -48,7 +48,7 @@ export function ContributionsBar({
     <div className="space-y-3">
       {/* Stacked bar */}
       <div
-        className="flex h-4 w-full overflow-hidden rounded-full bg-background ring-1 ring-border"
+        className="flex h-4 w-full overflow-hidden rounded-full bg-surface-2 ring-1 ring-border"
         role="img"
         aria-label="Score contribution breakdown"
       >

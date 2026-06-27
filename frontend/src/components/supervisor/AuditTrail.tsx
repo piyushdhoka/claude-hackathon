@@ -54,7 +54,7 @@ export function AuditTrail({ caseId }: { caseId: string }) {
               <span className="absolute -left-[1.4rem] top-1 grid h-5 w-5 place-items-center rounded-full bg-saffron text-white">
                 <Dot size={18} />
               </span>
-              <div className="rounded-xl bg-card p-3 ring-1 ring-border">
+              <div className="rounded-xl bg-surface p-3 ring-1 ring-border">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-mono text-sm font-bold text-saffron-dark">
                     {e.type ?? "event"}
@@ -63,7 +63,7 @@ export function AuditTrail({ caseId }: { caseId: string }) {
                 </div>
                 {e.actor && <p className="text-xs text-muted">by {e.actor}</p>}
                 {e.payload && Object.keys(e.payload).length > 0 && (
-                  <pre className="mt-1 max-h-24 overflow-auto rounded bg-background p-2 text-[11px] leading-snug text-foreground/70">
+                  <pre className="mt-1 max-h-24 overflow-auto rounded bg-surface-2 p-2 text-[11px] leading-snug text-foreground/70">
                     {JSON.stringify(e.payload, null, 1)}
                   </pre>
                 )}

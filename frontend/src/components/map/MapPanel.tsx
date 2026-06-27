@@ -29,8 +29,8 @@ const HotspotMap = dynamic(
 
 function MapSkeleton({ label }: { label: string }) {
   return (
-    <div className="grid h-[72vh] w-full place-items-center rounded-2xl border border-dashed border-border bg-card text-muted">
-      <div className="flex items-center gap-2 text-sm">
+    <div className="skeleton grid h-[68dvh] min-h-104 w-full place-items-center rounded-3xl border border-dashed border-border text-muted md:h-[72vh]">
+      <div className="flex items-center gap-2 rounded-full bg-surface/80 px-4 py-2 text-sm font-semibold backdrop-blur">
         <Loader2 size={18} className="animate-spin" /> {label}
       </div>
     </div>
@@ -75,7 +75,7 @@ export function MapPanel() {
 
   if (failed) {
     return (
-      <div className="grid h-[72vh] w-full place-items-center rounded-2xl border border-dashed border-border bg-card text-center text-muted">
+      <div className="grid h-[68dvh] min-h-104 w-full place-items-center rounded-3xl border border-dashed border-border bg-surface text-center text-muted md:h-[72vh]">
         <div className="flex flex-col items-center gap-2 p-6">
           <MapPinned size={28} />
           <div className="text-sm">

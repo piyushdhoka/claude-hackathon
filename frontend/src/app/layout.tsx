@@ -8,7 +8,7 @@ import { TopBar, BottomTabs } from "@/components/Nav";
 const fraunces = Fraunces({
   variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  // Variable font (weight omitted) so the optical-size axis can be declared.
   axes: ["opsz"],
 });
 

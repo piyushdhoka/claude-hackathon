@@ -56,7 +56,7 @@ export function RevealContact({ caseId, masked }: { caseId: string; masked?: str
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="mt-3 inline-flex items-center gap-2 rounded-xl border-2 border-rose/40 bg-card px-4 py-2 text-sm font-bold text-rose transition active:scale-95"
+          className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-rose/40 bg-surface px-4 py-2 text-sm font-bold text-rose transition active:scale-95"
         >
           <Eye size={15} /> Reveal contact
         </button>

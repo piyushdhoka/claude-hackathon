@@ -50,14 +50,21 @@ export function DuplicateReview({ caseDoc, language }: { caseDoc: Case; language
         </p>
       )}
       {ran && !loading && dupes && dupes.length === 0 && (
-        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted">
+        <p className="rounded-xl border border-border bg-surface p-4 text-sm text-muted">
           No likely duplicates found.
         </p>
       )}
 
       <div className="mt-3 space-y-3">
         {dupes?.map((d, i) => (
-          <MatchCard key={d.case_id} candidate={d} query={caseDoc} language={language} rank={i + 1} />
+          <MatchCard
+            key={d.case_id}
+            candidate={d}
+            query={caseDoc}
+            queryCenter={caseDoc.reporting_center}
+            language={language}
+            rank={i + 1}
+          />
         ))}
       </div>
     </div>

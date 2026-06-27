@@ -154,13 +154,13 @@ export function HotspotMap({ geo }: Props) {
     setVisible((v) => ({ ...v, [k]: !v[k] }));
 
   return (
-    <div className="relative h-[72vh] w-full overflow-hidden rounded-2xl border border-border">
+    <div className="relative h-[68dvh] min-h-104 w-full overflow-hidden rounded-3xl border border-border shadow-sm md:h-[72vh]">
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}
         scrollWheelZoom
         className="h-full w-full"
-        style={{ background: "#e9ecef" }}
+        style={{ background: "#e7ddc9" }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

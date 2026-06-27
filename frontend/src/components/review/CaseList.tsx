@@ -3,7 +3,7 @@
 // case to drive the match search. Photo/colour-first row with the key facts.
 import { useMemo, useState } from "react";
 import { clsx } from "clsx";
-import { Search, MapPin, User, ChevronRight } from "lucide-react";
+import { Search, MapPin, User, ChevronRight, Building2 } from "lucide-react";
 import type { Case } from "@/lib/types";
 
 export function CaseFilters({
@@ -26,7 +26,7 @@ export function CaseFilters({
           value={value.q}
           onChange={(e) => onChange({ ...value, q: e.target.value })}
           placeholder="Search by name, place, ID…"
-          className="w-full rounded-2xl border-2 border-border bg-card py-3.5 pl-11 pr-4 text-base outline-none focus:border-saffron"
+          className="w-full rounded-2xl border-2 border-border bg-surface py-3.5 pl-11 pr-4 text-base outline-none transition focus:border-saffron"
         />
       </div>
       <div className="flex gap-2">
@@ -36,10 +36,10 @@ export function CaseFilters({
             type="button"
             onClick={() => onChange({ ...value, case_type: t.key })}
             className={clsx(
-              "rounded-full px-4 py-2 text-sm font-bold transition",
+              "min-h-10 rounded-full px-4 py-2 text-sm font-bold transition active:scale-95",
               value.case_type === t.key
-                ? "bg-saffron text-white shadow"
-                : "bg-card text-muted ring-1 ring-border hover:bg-background"
+                ? "bg-saffron text-white shadow-sm"
+                : "bg-surface text-muted ring-1 ring-border hover:bg-surface-2"
             )}
           >
             {t.label}
@@ -74,21 +74,21 @@ export function CaseList({
 
   if (filtered.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-border bg-card p-6 text-center text-muted">
+      <p className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-muted">
         No cases match. Try a different filter.
       </p>
     );
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className="max-h-[70vh] space-y-2 overflow-y-auto pr-0.5 lg:max-h-[calc(100vh-13rem)]">
       {filtered.map((c) => (
         <li key={c.case_id}>
           <button
             type="button"
             onClick={() => onSelect(c)}
             className={clsx(
-              "flex w-full items-center gap-3 rounded-2xl border-2 bg-card p-3 text-left transition active:scale-[0.99]",
+              "flex w-full items-center gap-3 rounded-2xl border-2 bg-surface p-3 text-left transition active:scale-[0.99]",
               selectedId === c.case_id
                 ? "border-saffron ring-2 ring-saffron/20"
                 : "border-border hover:border-saffron/40"
@@ -122,6 +122,11 @@ export function CaseList({
                   </span>
                 )}
               </span>
+              {c.reporting_center && (
+                <span className="mt-0.5 flex items-center gap-1 truncate text-[11px] font-medium text-muted/80">
+                  <Building2 size={10} /> {c.reporting_center}
+                </span>
+              )}
             </span>
             <ChevronRight size={18} className="shrink-0 text-muted" />
           </button>
