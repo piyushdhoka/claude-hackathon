@@ -531,18 +531,47 @@ def kiosk_recommendations() -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # build_geojson
 # ---------------------------------------------------------------------------
+def _resolve_kml_dir() -> Optional[Path]:
+    """Locate the directory holding the source KMLs.
+
+    ``settings.kml_dir`` is the configured location, but the KMLs may have been
+    moved under ``data/``. Return the first directory that actually contains the
+    CCTV KML, or ``None`` if it cannot be found.
+    """
+    cctv = settings.cctv_kml.name
+    for cand in (settings.kml_dir, REPO_ROOT / "data", REPO_ROOT):
+        if (cand / cctv).exists():
+            return cand
+    return None
+
+
 def build_geojson() -> dict[str, Any]:
     """Rebuild and write ``frontend/public/geo/*.json`` from the source KMLs.
 
-    Delegates to :mod:`app.geo.etl`. Clears this module's GeoJSON caches so a
-    subsequent request reflects the freshly written files. Returns the
-    ``{filename: feature_count}`` summary.
+    Delegates parsing/emission to :mod:`app.geo.etl`. Tolerates the KMLs having
+    been relocated (e.g. to ``data/``) by pointing the ETL at wherever they
+    actually live for the duration of the call. Clears this module's caches so a
+    subsequent request reflects the freshly written files. Returns the output
+    directory and a ``{filename: feature_count}`` summary.
     """
     from . import etl
 
-    etl.load_dataset.cache_clear()
-    ds = etl.load_dataset()
-    summary = etl.write_geojson_files(ds)
+    kml_dir = _resolve_kml_dir()
+    if kml_dir is None:
+        raise FileNotFoundError(
+            f"source KMLs ({settings.cctv_kml.name}) not found under "
+            f"{settings.kml_dir} or {REPO_ROOT / 'data'}"
+        )
+
+    original = settings.kml_dir
+    try:
+        settings.kml_dir = kml_dir          # cctv_kml/police_kml/... derive from this
+        etl.load_dataset.cache_clear()
+        ds = etl.load_dataset()
+        summary = etl.write_geojson_files(ds)
+    finally:
+        settings.kml_dir = original
+        etl.load_dataset.cache_clear()
 
     # Invalidate cached GeoJSON-derived state so callers see the rebuild.
     for fn in (_zones, _cameras, _landmarks, _chokepoints, _police,

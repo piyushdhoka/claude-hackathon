@@ -82,11 +82,11 @@ export async function submitEvents(
 
   // Offline-first path: queue first (durable), then opportunistically flush.
   await enqueueEvents(events);
-  const { delivered } = await flushOutbox();
-  // If everything we just queued was delivered, `delivered` covers it. We can't
-  // cheaply prove these exact events left (a concurrent flush may batch others),
-  // so report queued=true unless the queue is now provably empty for our events.
-  return { delivered: delivered > 0, queued: true };
+  const { delivered, remaining } = await flushOutbox();
+  // delivered: at least one event left the device on this attempt (we sent the
+  //   batch that includes ours). queued: something is still awaiting delivery.
+  //   Either way the events are durably persisted locally — that's the guarantee.
+  return { delivered: delivered > 0, queued: remaining > 0 };
 }
 
 /** Convenience: create a case (build event + submit). */
