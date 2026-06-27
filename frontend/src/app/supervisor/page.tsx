@@ -29,7 +29,7 @@ import { RevealContact } from "@/components/supervisor/RevealContact";
 import { AuditTrail } from "@/components/supervisor/AuditTrail";
 import { DuplicateReview } from "@/components/supervisor/DuplicateReview";
 import { PhotoCompare } from "@/components/supervisor/PhotoCompare";
-import { confirmMatch } from "@/components/supervisor/confirmEvent";
+import { confirmMatch, purgeCase } from "@/components/supervisor/confirmEvent";
 
 export default function SupervisorPage() {
   const { role, language, setRole } = useApp();
@@ -43,6 +43,8 @@ export default function SupervisorPage() {
 
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<{ matchedId: string; queued: boolean } | null>(null);
+  const [purging, setPurging] = useState(false);
+  const [purged, setPurged] = useState(false);
 
   const isSupervisor = role === "supervisor";
 
@@ -80,12 +82,22 @@ export default function SupervisorPage() {
     async (cand: MatchCandidate) => {
       if (!selected) return;
       setConfirmingId(cand.case_id);
+      setPurged(false);
       const res = await confirmMatch(selected.case_id, cand.case_id, "supervisor");
       setConfirmed({ matchedId: cand.case_id, queued: res.queued || !res.delivered });
       setConfirmingId(null);
     },
     [selected]
   );
+
+  const onPurge = useCallback(async () => {
+    if (!selected || !confirmed) return;
+    setPurging(true);
+    await purgeCase(selected.case_id, confirmed.matchedId, "supervisor");
+    setPurged(true);
+    setPurging(false);
+    load(); // refresh so the now-redacted record is reflected
+  }, [selected, confirmed, load]);
 
   return (
     <div className="space-y-5">
@@ -209,13 +221,37 @@ export default function SupervisorPage() {
               </div>
 
               {confirmed && (
-                <div className="flex items-center gap-2 rounded-2xl border-2 border-teal/40 bg-teal/5 p-4 text-teal animate-pop">
-                  <CheckCircle2 size={20} className="shrink-0" />
-                  <span className="font-semibold">
-                    Match confirmed with{" "}
-                    <span className="font-mono">{confirmed.matchedId}</span>.
-                    {confirmed.queued && " (queued — will sync when online)"}
-                  </span>
+                <div className="space-y-3 rounded-2xl border-2 border-teal/40 bg-teal/5 p-4 animate-pop">
+                  <div className="flex items-center gap-2 text-teal">
+                    <CheckCircle2 size={20} className="shrink-0" />
+                    <span className="font-semibold">
+                      Reunited with <span className="font-mono">{confirmed.matchedId}</span>.
+                      {confirmed.queued && " (queued — will sync when online)"}
+                    </span>
+                  </div>
+                  {/* Privacy by design: purge PII once the person is reunited. */}
+                  {!purged ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-sm text-muted">
+                        Both cases are closed. Purge personal data (name, contact, photo,
+                        description) now that they are no longer needed.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={onPurge}
+                        disabled={purging}
+                        className="inline-flex items-center gap-2 rounded-xl bg-rose px-4 py-2 text-sm font-bold text-white active:scale-95 disabled:opacity-60"
+                      >
+                        {purging ? <Loader2 size={15} className="animate-spin" /> : <ShieldCheck size={15} />}
+                        Purge personal data
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="flex items-center gap-2 text-sm font-semibold text-rose">
+                      <ShieldCheck size={15} /> Personal data purged — only an anonymized,
+                      auditable record remains.
+                    </p>
+                  )}
                 </div>
               )}
 
