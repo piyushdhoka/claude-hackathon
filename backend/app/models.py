@@ -77,9 +77,9 @@ class Case(BaseModel):
     visual_description: Optional[str] = None  # Claude-vision natural-language, localized
     attributes: Attributes = Field(default_factory=Attributes)
 
-    # Biometric (face) — embedding only, never raw image in the matchable store
+    # Photo reference (transient; raw image never persisted in the matchable store).
+    # Identity from a photo is established at review time via Claude vision comparison.
     photo_ref: Optional[str] = None
-    face_embedding: Optional[list[float]] = None
 
     # Lifecycle
     status: CaseStatus = CaseStatus.pending

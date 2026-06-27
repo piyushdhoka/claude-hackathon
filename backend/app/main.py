@@ -12,7 +12,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .db import init_db
 from .enrich.router import router as enrich_router
-from .face.router import router as face_router
 from .geo.router import router as geo_router
 from .match.router import router as match_router
 from .registry.router import router as registry_router
@@ -48,13 +47,11 @@ app.include_router(registry_router)
 app.include_router(match_router)
 app.include_router(geo_router)
 app.include_router(enrich_router)
-app.include_router(face_router)
 
 
 @app.get("/health")
 def health():
     return {
         "status": "ok",
-        "face_match_enabled": settings.face_match_enabled,
         "claude_key_present": bool(settings.anthropic_api_key),
     }

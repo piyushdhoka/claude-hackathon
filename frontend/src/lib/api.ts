@@ -87,12 +87,18 @@ export const api = {
       attributes: Record<string, unknown>;
       contradicts_structured?: boolean;
     }>("/enrich/vision", { method: "POST", body: JSON.stringify(payload) }),
-  // Face biometric 1:N search (feature-flagged; returns 503 when disabled)
-  faceSearch: (payload: { image_b64: string; case_type?: string; top_k?: number }) =>
-    req<MatchCandidate[]>("/face/search", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
+  // Claude-vision photo comparison for two candidates (assistive, human-in-the-loop).
+  comparePhotos: (payload: {
+    image_a_b64: string;
+    image_b_b64: string;
+    language?: string;
+  }) =>
+    req<{
+      compared: boolean;
+      verdict: string | null; // likely_same | likely_different | uncertain
+      confidence: number | null;
+      reasoning: string | null;
+    }>("/enrich/compare", { method: "POST", body: JSON.stringify(payload) }),
 
   // --- geo ---
   hotspots: () => req<unknown[]>("/geo/hotspots"),

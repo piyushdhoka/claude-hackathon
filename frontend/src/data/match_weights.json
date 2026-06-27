@@ -1,16 +1,18 @@
 {
   "_comment": "Single source of truth for match scoring. Consumed by backend/app/match (Python) AND frontend JS matcher (lib/match-lite). Keep both in sync via this file. Scores fuse to 0-100 with available-case normalization (absent features dropped from numerator AND denominator).",
   "weights": {
-    "name_fuzzy": 0.22,
-    "name_phonetic": 0.08,
-    "gender": 0.12,
-    "age_band": 0.14,
-    "geo": 0.18,
-    "time": 0.08,
-    "language": 0.06,
-    "state_district": 0.06,
-    "description": 0.06
+    "name_fuzzy": 0.18,
+    "name_phonetic": 0.06,
+    "gender": 0.10,
+    "age_band": 0.12,
+    "geo": 0.15,
+    "time": 0.07,
+    "language": 0.05,
+    "state_district": 0.05,
+    "description": 0.05,
+    "visual": 0.12
   },
+  "_visual_note": "visual = overlap of visual attributes (colors/clothing/marks/build/hair/accessories) from Claude vision analysis of a photo. Absent (dropped via available-case normalization) until a photo is captured, so it never penalizes text-only cases. Photo IDENTITY (same-person) is handled at review time by Claude vision photo comparison (/enrich/compare), not by a match weight.",
   "sub_scores": {
     "gender": { "same": 1.0, "either_unknown": 0.5, "mismatch": 0.0 },
     "age_band": { "same": 1.0, "adjacent": 0.6, "else": 0.0 },

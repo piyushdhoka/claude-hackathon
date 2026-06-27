@@ -326,24 +326,3 @@ def score_visual(qattrs: Optional[dict[str, Any]],
         else:  # scalar
             total += 1.0 if q[f] == c[f] else 0.0
     return total / len(shared)
-
-
-def score_face(qemb: Optional[list[float]],
-               cemb: Optional[list[float]]) -> Optional[float]:
-    """Cosine similarity of two face embeddings, mapped to [0, 1].
-
-    ``None`` when either embedding is missing (the common case for text-only
-    records), so available-case normalization drops the feature.
-    """
-    if not qemb or not cemb or len(qemb) != len(cemb):
-        return None
-    import numpy as np
-
-    a = np.asarray(qemb, dtype="float32")
-    b = np.asarray(cemb, dtype="float32")
-    na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
-    if na == 0.0 or nb == 0.0:
-        return None
-    cos = float(np.dot(a, b) / (na * nb))
-    # ArcFace cosine: same person typically >0.35, different ~0. Clamp negatives.
-    return max(0.0, min(1.0, cos))

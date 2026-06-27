@@ -28,9 +28,6 @@ class Settings(BaseSettings):
     claude_translate_model: str = "claude-opus-4-8"     # wizard/voice prompt translation (10 languages)
     claude_fast_model: str = "claude-haiku-4-5"         # available fallback for high-volume/low-latency
 
-    # --- Feature flags ---
-    face_match_enabled: bool = False
-
     # --- Paths ---
     # Datasets live at the repo root: CSVs under data/, KMLs at the root.
     data_dir: Path = REPO_ROOT / "data"
