@@ -1,8 +1,14 @@
-// Write-path for cases. ONLINE-first today; the offline+map agent upgrades the
-// internals to OFFLINE-first (Dexie mirror + outbox + Workbox background sync)
-// WITHOUT changing these signatures, so the wizard never has to change.
+// Write-path for cases. OFFLINE-FIRST: every SetuEvent is written to the Dexie
+// outbox FIRST (instant, never blocks the operator and survives a refresh), then
+// we OPTIMISTICALLY attempt delivery. On failure the events stay queued and the
+// sync engine drains them when connectivity returns. Events carry client UUIDs,
+// so replaying the queue is idempotent (the backend de-dupes on event_id).
+//
+// The exported signatures (buildCaseCreatedEvent / submitEvents / createCase) are
+// FROZEN — the intake wizard depends on them — only the internals changed.
 import { api } from "./api";
 import type { Case, SetuEvent } from "./types";
+import { enqueueEvents, dbAvailable, flushOutbox } from "./offline";
 
 function uuid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
@@ -46,20 +52,41 @@ export function buildCaseCreatedEvent(
 }
 
 /**
- * Submit one or more events. Returns whether they were queued locally (offline)
- * or delivered. The offline agent replaces the body with: write to Dexie outbox
- * first, then attempt sync; this stub goes straight to the network.
+ * Submit one or more events, offline-first.
+ *
+ * 1. Persist every event into the Dexie outbox immediately (and optimistically
+ *    update the local cases mirror). This is instant and durable across reloads.
+ * 2. Attempt to flush the outbox to the backend right away. If we are offline or
+ *    the POST fails, the events simply remain queued and the sync engine retries
+ *    on reconnect.
+ *
+ * Returns `{ delivered, queued }`:
+ *   - delivered: the backend acknowledged the events on this call.
+ *   - queued:    the events are persisted locally awaiting (further) delivery.
+ *
+ * `queued` is true whenever IndexedDB is available (the durable guarantee). In
+ * the rare environment without IndexedDB we degrade to a direct network POST.
  */
 export async function submitEvents(
   events: SetuEvent[]
 ): Promise<{ delivered: boolean; queued: boolean }> {
-  try {
-    await api.postEvents(events);
-    return { delivered: true, queued: false };
-  } catch {
-    // online-first stub: surface failure. Offline agent will queue instead.
-    return { delivered: false, queued: false };
+  // Fallback path: no IndexedDB -> behave like the old online-first client.
+  if (!dbAvailable()) {
+    try {
+      await api.postEvents(events);
+      return { delivered: true, queued: false };
+    } catch {
+      return { delivered: false, queued: false };
+    }
   }
+
+  // Offline-first path: queue first (durable), then opportunistically flush.
+  await enqueueEvents(events);
+  const { delivered } = await flushOutbox();
+  // If everything we just queued was delivered, `delivered` covers it. We can't
+  // cheaply prove these exact events left (a concurrent flush may batch others),
+  // so report queued=true unless the queue is now provably empty for our events.
+  return { delivered: delivered > 0, queued: true };
 }
 
 /** Convenience: create a case (build event + submit). */

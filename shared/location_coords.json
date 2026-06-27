@@ -14,11 +14,11 @@
     "source": "chokepoint"
   },
   "Dasak Ghat": {
-    "lat": 20.0064,
-    "lng": 73.7902,
-    "matched_to": "Godavari Ghat approaches",
-    "score": 57.1,
-    "source": "chokepoint"
+    "lat": 19.98992,
+    "lng": 73.84657,
+    "matched_to": "Dasak Ghat",
+    "score": 100.0,
+    "source": "kml_landmark"
   },
   "Dindori Road Crossing": {
     "lat": 20.0344735,
@@ -119,11 +119,11 @@
     "source": "chokepoint"
   },
   "Takli Sangam": {
-    "lat": 20.0078,
-    "lng": 73.7638,
-    "matched_to": "Gangapur Naka",
-    "score": 56.0,
-    "source": "chokepoint"
+    "lat": 19.98957,
+    "lng": 73.82175,
+    "matched_to": "Takli Sangam Ghat",
+    "score": 100.0,
+    "source": "kml_landmark"
   },
   "Trimbak Road": {
     "lat": 19.9663708,

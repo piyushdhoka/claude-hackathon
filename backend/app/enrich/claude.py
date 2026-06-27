@@ -31,12 +31,37 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 from typing import Any
 
 from ..config import settings
 from . import prompts
 
 logger = logging.getLogger("setu.enrich.claude")
+
+# Opus 4.8 occasionally leaks its internal XML tool-call markup into a STRING
+# field's value when that value is meant to be empty. The leaked value carries
+# the model's own parameter-tag scaffolding, e.g. a clothing_type that should be
+# "" comes back as a closing-param-tag fragment followed by the next field's
+# opening tag and value. This regex matches any such leakage so we can drop it.
+# Legitimate values ("saree", "kurta", ...) never contain angle-bracket tags, so
+# this only ever fires on corrupted output.
+_TOOL_MARKUP_LEAK = re.compile(r"</?\s*antml|</?\s*parameter\b|<\s*parameter\b", re.IGNORECASE)
+
+
+def _clean_str(value: Any) -> str:
+    """Coerce to a stripped string, blanking out any leaked tool-call markup.
+
+    Guards against the Opus 4.8 quirk where an empty string field bleeds the
+    model's internal tool-call tags into the value. Returns "" for such junk so
+    no field ever propagates malformed markup to the contract.
+    """
+    s = str(value or "").strip()
+    if not s:
+        return ""
+    if _TOOL_MARKUP_LEAK.search(s) or "&gt;" in s:
+        return ""
+    return s
 
 # A generous ceiling — these outputs are tiny (a JSON object or 1-2 lines).
 _MAX_TOKENS = 2048
@@ -187,13 +212,14 @@ def _coerce_extract(data: dict[str, Any]) -> dict[str, Any]:
 
     def _str_list(v: Any) -> list[str]:
         if isinstance(v, list):
-            return [str(x).strip() for x in v if str(x).strip()]
+            # _clean_str blanks leaked markup; the filter drops the empties.
+            return [c for c in (_clean_str(x) for x in v) if c]
         return []
 
     out["clothing_colors"] = _str_list(data.get("clothing_colors"))
     out["marks"] = _str_list(data.get("marks"))
     out["mobility_confusion_flags"] = _str_list(data.get("mobility_confusion_flags"))
-    out["clothing_type"] = str(data.get("clothing_type") or "").strip()
+    out["clothing_type"] = _clean_str(data.get("clothing_type"))
 
     gender = str(data.get("apparent_gender") or "unknown").strip().lower()
     out["apparent_gender"] = gender if gender in ("male", "female", "unknown") else "unknown"
