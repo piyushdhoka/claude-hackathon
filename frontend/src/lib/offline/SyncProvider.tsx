@@ -14,16 +14,36 @@ import { CloudOff, RefreshCw, CheckCircle2, Clock } from "lucide-react";
 import { clsx } from "clsx";
 import { useSync } from "./hooks";
 
-/** Registers the hand-written service worker. Safe everywhere. */
+/** Registers the hand-written service worker — PRODUCTION ONLY.
+ *
+ * In development a SW caches hashed Turbopack chunks and intercepts navigations,
+ * which blanks/freezes the page on recompiles. So in dev we do the opposite:
+ * proactively unregister any worker left over from a previous session and clear
+ * its caches, so the app self-heals on the next load. The offline outbox/mirror
+ * (Dexie) keeps working regardless — the SW only adds shell precaching in prod.
+ */
 export function SwRegistrar() {
   useEffect(() => {
     if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
-    // Register after load so it never competes with first paint.
+
+    if (process.env.NODE_ENV !== "production") {
+      // DEV: remove any stale SW + caches; never register one.
+      navigator.serviceWorker
+        .getRegistrations?.()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
+      if (typeof caches !== "undefined") {
+        caches.keys().then((keys) => keys.forEach((k) => caches.delete(k))).catch(() => {});
+      }
+      return;
+    }
+
+    // PROD: register after load so it never competes with first paint.
     const register = () => {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/", updateViaCache: "none" })
         .catch(() => {
-          /* SW is a progressive enhancement; ignore failures (e.g. http dev). */
+          /* SW is a progressive enhancement; ignore failures. */
         });
     };
     if (document.readyState === "complete") register();
