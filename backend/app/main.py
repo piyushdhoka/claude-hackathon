@@ -14,6 +14,7 @@ from .db import init_db
 from .enrich.router import router as enrich_router
 from .geo.router import router as geo_router
 from .match.router import router as match_router
+from .notify.router import router as notify_router
 from .registry.router import router as registry_router
 from .registry.seed import seed
 from .search.router import router as search_router
@@ -51,6 +52,7 @@ app.include_router(geo_router)
 app.include_router(enrich_router)
 app.include_router(triage_router)
 app.include_router(search_router)
+app.include_router(notify_router)
 
 
 @app.get("/health")

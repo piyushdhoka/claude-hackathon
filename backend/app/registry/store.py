@@ -21,6 +21,7 @@ EV_DUP_FLAGGED = "dup.flagged"
 EV_DUP_MERGED = "dup.merged"
 EV_CONSENT = "consent.captured"
 EV_PII_REVEALED = "pii.revealed"
+EV_PII_NOTIFIED = "pii.notified"
 EV_REUNITED = "case.reunited"
 EV_PURGED = "case.purged"
 
